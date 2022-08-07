@@ -36,7 +36,8 @@ void Rack::handleMessage(cMessage *message)
           DataPacket *msg = new DataPacket("Data Packet");
           msg->setKind(DATAPACKET);
           uint64_t destination = (uint64_t)uniform(0,POLICYSIZE);
-          EV << "destination = "<< destination<< endl;
+          msg->setDestination(destination);
+          EV << "destination in rack = "<< destination<< endl;
           send(msg, "port$o", 0);
           simtime_t arrival_time = exponential(RACKRATE);
           scheduleAt(simTime() + arrival_time,message);

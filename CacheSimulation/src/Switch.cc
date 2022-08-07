@@ -35,6 +35,7 @@ void Switch::handleMessage(cMessage *message)
 
     if(message->getKind() == DATAPACKET){
         DataPacket *msg = check_and_cast<DataPacket *>(message);
+        EV << "Dest in handle = "<<msg->getDestination()<<endl;
                                switch(cache_search(msg->getDestination())){
                                    case FOUND:
                                        delete msg;
@@ -44,6 +45,7 @@ void Switch::handleMessage(cMessage *message)
                                        send(msg, "port$o", egressPort);
                                        break;
                                    case THRESHOLDCROSS:
+                                       if((int)par("Type") == TOR)return;
                                        cGate *gate = msg->getArrivalGate();
                                        int arrivalGate;
                                        if(gate)arrivalGate = gate->getIndex();   //Get arrivalport
@@ -88,14 +90,13 @@ int Switch::cache_search(uint64_t rule){
     }
 }
 
-int Switch::miss_table_search(uint64_t rule){
+int Switch::miss_table_search(uint64_t dest){
     int egressPort;
-    EV << "NumOfAggregation = "<< (int)(getParentModule()->par("NumOfAggregation"))<< endl;
     switch((int)par("Type")){
             case TOR:
                 //egressPort = (int)ceil((float)rule/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
 
-                if(rule < 5000)egressPort = 1;
+                if(dest < 5000)egressPort = 1;
                 else egressPort = 2;
               break;
             case AGGREGATION:
@@ -104,6 +105,7 @@ int Switch::miss_table_search(uint64_t rule){
             break;
 
         }
+    EV<<"dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
     return egressPort;
 }
 

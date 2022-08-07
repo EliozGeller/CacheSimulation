@@ -35,13 +35,13 @@ network Network
             delay = 100ms;
         }
     submodules:
-        rack[3]: Rack {
+        rack[NumOfToRs]: Rack {
             @display("p=363,430,r,50");
         }
-        tor[3]: Switch {
+        tor[NumOfToRs]: Switch {
             @display("p=363,349,r,50");
         }
-        agg[2]: Switch {
+        agg[NumOfAggregation]: Switch {
             @display("p=363,241,r,50");
         }
         controllerswitch: Switch {
