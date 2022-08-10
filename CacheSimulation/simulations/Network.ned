@@ -19,6 +19,8 @@ import cachesimulation.Rack;
 import cachesimulation.Switch;
 import cachesimulation.Controller;
 
+
+
 //
 // Two instances (tic and toc) of Txc connected.
 //
@@ -32,7 +34,7 @@ network Network
     types:
         channel C extends ned.DelayChannel
         {
-            delay = 100ms;
+            delay = 1ms;
         }
     submodules:
         rack[NumOfToRs]: Rack {

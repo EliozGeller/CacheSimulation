@@ -46,15 +46,7 @@ void Switch::handleMessage(cMessage *message)
                                        break;
                                    case THRESHOLDCROSS:
                                        if((int)par("Type") == TOR)return;
-                                       cGate *gate = msg->getArrivalGate();
-                                       int arrivalGate;
-                                       if(gate)arrivalGate = gate->getIndex();   //Get arrivalport
-                                       else return;
-                                       ControlPacket *conpacket = new ControlPacket("Insert rule Packet");
-                                       conpacket->setKind(INSERTRULE);
-                                       conpacket->setRule(msg->getDestination());
-                                       send(conpacket, "port$o", arrivalGate);
-                                       delete msg;
+                                       fc_send(msg);
                                        break;
                                }
     }
@@ -70,7 +62,18 @@ void Switch::handleMessage(cMessage *message)
     }
 
 }
-
+void Switch::fc_send(cMessage *message){
+    DataPacket *msg = check_and_cast<DataPacket *>(message);
+    cGate *gate = msg->getArrivalGate();
+    int arrivalGate;
+    if(gate)arrivalGate = gate->getIndex();   //Get arrivalport
+    else return;
+    ControlPacket *conpacket = new ControlPacket("Insert rule Packet");
+    conpacket->setKind(INSERTRULE);
+    conpacket->setRule(msg->getDestination());
+    send(conpacket, "port$o", arrivalGate);
+    delete msg;
+}
 int Switch::cache_search(uint64_t rule){
     auto it = cache.find(rule);
 
@@ -94,18 +97,20 @@ int Switch::miss_table_search(uint64_t dest){
     int egressPort;
     switch((int)par("Type")){
             case TOR:
-                //egressPort = (int)ceil((float)rule/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
+                egressPort = (int)ceil((float)dest/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
 
-                if(dest < 5000)egressPort = 1;
-                else egressPort = 2;
+                //if(dest < 5000)egressPort = 1;
+                //else egressPort = 2;
+                EV<<"in Tor:dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
               break;
             case AGGREGATION:
             case CONTROLLERSWITCH:
                 egressPort = 0;
+                EV<<"in Other:dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
             break;
 
         }
-    EV<<"dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
+
     return egressPort;
 }
 

@@ -17,7 +17,9 @@
 #define __CACHESIMULATION_TCX_H
 
 #include <omnetpp.h>
+#include "json.hpp"
 
+using json = nlohmann::json;
 using namespace omnetpp;
 
 namespace cachesimulation {
@@ -27,6 +29,10 @@ namespace cachesimulation {
  */
 class Rack : public cSimpleModule
 {
+private:
+   int id;
+   unsigned long long int file_pointer;
+   json trace;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
