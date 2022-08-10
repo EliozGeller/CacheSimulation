@@ -183,6 +183,8 @@ Register_Class(DataPacket)
 DataPacket::DataPacket(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
     this->destination = 0;
+    this->external_destination = 0;
+    this->miss_hop = 0;
 }
 
 DataPacket::DataPacket(const DataPacket& other) : ::omnetpp::cPacket(other)
@@ -205,18 +207,24 @@ DataPacket& DataPacket::operator=(const DataPacket& other)
 void DataPacket::copy(const DataPacket& other)
 {
     this->destination = other.destination;
+    this->external_destination = other.external_destination;
+    this->miss_hop = other.miss_hop;
 }
 
 void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cPacket::parsimPack(b);
     doParsimPacking(b,this->destination);
+    doParsimPacking(b,this->external_destination);
+    doParsimPacking(b,this->miss_hop);
 }
 
 void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cPacket::parsimUnpack(b);
     doParsimUnpacking(b,this->destination);
+    doParsimUnpacking(b,this->external_destination);
+    doParsimUnpacking(b,this->miss_hop);
 }
 
 uint64_t DataPacket::getDestination() const
@@ -227,6 +235,26 @@ uint64_t DataPacket::getDestination() const
 void DataPacket::setDestination(uint64_t destination)
 {
     this->destination = destination;
+}
+
+uint64_t DataPacket::getExternal_destination() const
+{
+    return this->external_destination;
+}
+
+void DataPacket::setExternal_destination(uint64_t external_destination)
+{
+    this->external_destination = external_destination;
+}
+
+int DataPacket::getMiss_hop() const
+{
+    return this->miss_hop;
+}
+
+void DataPacket::setMiss_hop(int miss_hop)
+{
+    this->miss_hop = miss_hop;
 }
 
 class DataPacketDescriptor : public omnetpp::cClassDescriptor
@@ -294,7 +322,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 1+basedesc->getFieldCount() : 1;
+    return basedesc ? 3+basedesc->getFieldCount() : 3;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -307,8 +335,10 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
     }
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<1) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<3) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -321,8 +351,10 @@ const char *DataPacketDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "destination",
+        "external_destination",
+        "miss_hop",
     };
-    return (field>=0 && field<1) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<3) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -330,6 +362,8 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0]=='d' && strcmp(fieldName, "destination")==0) return base+0;
+    if (fieldName[0]=='e' && strcmp(fieldName, "external_destination")==0) return base+1;
+    if (fieldName[0]=='m' && strcmp(fieldName, "miss_hop")==0) return base+2;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -343,8 +377,10 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
     }
     static const char *fieldTypeStrings[] = {
         "uint64_t",
+        "uint64_t",
+        "int",
     };
-    return (field>=0 && field<1) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<3) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -412,6 +448,8 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
     DataPacket *pp = (DataPacket *)object; (void)pp;
     switch (field) {
         case 0: return uint642string(pp->getDestination());
+        case 1: return uint642string(pp->getExternal_destination());
+        case 2: return long2string(pp->getMiss_hop());
         default: return "";
     }
 }
@@ -427,6 +465,8 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
     DataPacket *pp = (DataPacket *)object; (void)pp;
     switch (field) {
         case 0: pp->setDestination(string2uint64(value)); return true;
+        case 1: pp->setExternal_destination(string2uint64(value)); return true;
+        case 2: pp->setMiss_hop(string2long(value)); return true;
         default: return false;
     }
 }

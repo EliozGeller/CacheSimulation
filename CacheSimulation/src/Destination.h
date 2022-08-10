@@ -13,30 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#include "Controller.h"
-#include "Definitions.h"
-#include "messages_m.h"
+#ifndef __CACHESIMULATION_TCX_H
+#define __CACHESIMULATION_TCX_H
 
+#include <omnetpp.h>
+
+using namespace omnetpp;
 
 namespace cachesimulation {
 
-Define_Module(Controller);
-
-void Controller::initialize()
+/**
+ * Implements the Txc simple module. See the NED file for more information.
+ */
+class Destination : public cSimpleModule
 {
-
-}
-
-void Controller::handleMessage(cMessage *message)
-{
-
-    DataPacket *msg = check_and_cast<DataPacket *>(message);
-    ControlPacket *conpacket = new ControlPacket; //("Insert rule Packet")
-    conpacket->setKind(INSERTRULE);
-    conpacket->setRule(msg->getDestination());
-    send(conpacket, "port$o", 0);
-    delete msg;
-
-}
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+};
 
 }; // namespace
+
+#endif

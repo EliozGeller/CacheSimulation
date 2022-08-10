@@ -43,6 +43,8 @@ class Switch : public cSimpleModule
     virtual int miss_table_search(uint64_t rule);
     virtual void evict_rule();
     virtual void fc_send(cMessage *msg);
+    virtual int hash(uint64_t dest);
+    virtual int hit_forward(uint64_t dest);
 
 };
 

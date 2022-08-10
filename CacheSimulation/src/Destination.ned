@@ -13,19 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-namespace cachesimulation;
+package cachesimulation;
 
-packet DataPacket
+//
+// Immediately sends out any message it receives. It can optionally generate
+// a message at the beginning of the simulation, to bootstrap the process.
+//
+simple Destination
 {
-    uint64_t destination;
-    uint64_t external_destination = 0;
-    int miss_hop = 0;
+    parameters:
+        int id = default(0);
+    gates:
+        inout port[];
 }
-
-packet ControlPacket
-{
-    uint64_t rule;
-}
-
-
-

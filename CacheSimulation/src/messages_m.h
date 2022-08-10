@@ -25,6 +25,8 @@ namespace cachesimulation {
  * packet DataPacket
  * {
  *     uint64_t destination;
+ *     uint64_t external_destination = 0;
+ *     int miss_hop = 0;
  * }
  * </pre>
  */
@@ -32,6 +34,8 @@ class DataPacket : public ::omnetpp::cPacket
 {
   protected:
     uint64_t destination;
+    uint64_t external_destination;
+    int miss_hop;
 
   private:
     void copy(const DataPacket& other);
@@ -52,13 +56,17 @@ class DataPacket : public ::omnetpp::cPacket
     // field getter/setter methods
     virtual uint64_t getDestination() const;
     virtual void setDestination(uint64_t destination);
+    virtual uint64_t getExternal_destination() const;
+    virtual void setExternal_destination(uint64_t external_destination);
+    virtual int getMiss_hop() const;
+    virtual void setMiss_hop(int miss_hop);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:24</tt> by nedtool.
+ * Class generated from <tt>messages.msg:26</tt> by nedtool.
  * <pre>
  * packet ControlPacket
  * {

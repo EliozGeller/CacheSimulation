@@ -18,6 +18,7 @@ package cachesimulation.simulations;
 import cachesimulation.Rack;
 import cachesimulation.Switch;
 import cachesimulation.Controller;
+import cachesimulation.Destination;
 
 
 
@@ -34,7 +35,7 @@ network Network
     types:
         channel C extends ned.DelayChannel
         {
-            delay = 1ms;
+            delay = 0.2ms;
         }
     submodules:
         rack[NumOfToRs]: Rack {
@@ -47,10 +48,13 @@ network Network
             @display("p=363,241,r,50");
         }
         controllerswitch: Switch {
-            @display("p=363,146");
+            @display("p=254,349");
         }
         controller: Controller {
-            @display("p=363,56");
+            @display("p=254,430");
+        }
+        dest: Destination {
+            @display("p=363,130");
         }
     connections:
         for i=0..NumOfToRs-1 {
@@ -59,6 +63,9 @@ network Network
         controllerswitch.port++ <--> C <--> controller.port++;
         for i=0..NumOfAggregation-1 {
             agg[i].port++ <--> C <--> controllerswitch.port++;
+        }
+        for i=0..NumOfAggregation-1 {
+            agg[i].port++ <--> C <--> dest.port++;
         }
         for i=0..NumOfToRs-1, for j=0..NumOfAggregation-1 {
             tor[i].port++ <--> C <--> agg[j].port++;

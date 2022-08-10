@@ -70,7 +70,7 @@ void Rack::handleMessage(cMessage *message)
    switch(message->getKind()){
         case GENERATEPACKET:
           DataPacket *genpack = check_and_cast<DataPacket *>(message);
-          DataPacket *msg = new DataPacket("Data Packet");
+          DataPacket *msg = new DataPacket; //("Data Packet")
           msg->setKind(DATAPACKET);
           uint64_t destination = genpack->getDestination();
           msg->setDestination(destination);

@@ -13,28 +13,23 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#include "Controller.h"
+#include "Destination.h"
 #include "Definitions.h"
 #include "messages_m.h"
 
 
 namespace cachesimulation {
 
-Define_Module(Controller);
+Define_Module(Destination);
 
-void Controller::initialize()
+void Destination::initialize()
 {
 
 }
 
-void Controller::handleMessage(cMessage *message)
+void Destination::handleMessage(cMessage *message)
 {
-
     DataPacket *msg = check_and_cast<DataPacket *>(message);
-    ControlPacket *conpacket = new ControlPacket; //("Insert rule Packet")
-    conpacket->setKind(INSERTRULE);
-    conpacket->setRule(msg->getDestination());
-    send(conpacket, "port$o", 0);
     delete msg;
 
 }

@@ -22,6 +22,8 @@ namespace cachesimulation {
 
 Define_Module(Switch);
 
+
+
 void Switch::initialize()
 {
     id = getIndex();
@@ -35,20 +37,28 @@ void Switch::handleMessage(cMessage *message)
 
     if(message->getKind() == DATAPACKET){
         DataPacket *msg = check_and_cast<DataPacket *>(message);
+        if(msg->getExternal_destination() == 1){
+            egressPort = 1;
+        }
+        else {
+            switch(cache_search(msg->getDestination())){
+                case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
+                    if((int)par("Type") == TOR)return;
+                    fc_send(msg);
+                    //break; //in purpose
+                case FOUND:
+                    egressPort = hit_forward(msg->getDestination());
+                    msg->setExternal_destination(1);
+                    break;
+                case NOTFOUND:
+                    egressPort = miss_table_search(msg->getDestination());
+                    msg->setMiss_hop(msg->getMiss_hop() + 1);
+                    break;
+         }
+        }
         EV << "Dest in handle = "<<msg->getDestination()<<endl;
-                               switch(cache_search(msg->getDestination())){
-                                   case FOUND:
-                                       delete msg;
-                                       break;
-                                   case NOTFOUND:
-                                       egressPort = miss_table_search(msg->getDestination());
-                                       send(msg, "port$o", egressPort);
-                                       break;
-                                   case THRESHOLDCROSS:
-                                       if((int)par("Type") == TOR)return;
-                                       fc_send(msg);
-                                       break;
-                               }
+        send(msg, "port$o", egressPort);
+
     }
     if(message->getKind() == INSERTRULE){
         ControlPacket *pck = check_and_cast<ControlPacket *>(message);
@@ -68,11 +78,10 @@ void Switch::fc_send(cMessage *message){
     int arrivalGate;
     if(gate)arrivalGate = gate->getIndex();   //Get arrivalport
     else return;
-    ControlPacket *conpacket = new ControlPacket("Insert rule Packet");
+    ControlPacket *conpacket = new ControlPacket; //("Insert rule Packet")
     conpacket->setKind(INSERTRULE);
     conpacket->setRule(msg->getDestination());
     send(conpacket, "port$o", arrivalGate);
-    delete msg;
 }
 int Switch::cache_search(uint64_t rule){
     auto it = cache.find(rule);
@@ -93,11 +102,25 @@ int Switch::cache_search(uint64_t rule){
     }
 }
 
+int Switch::hit_forward(uint64_t dest){
+    int egressPort;
+    switch((int)par("Type")){
+            case AGGREGATION:
+                egressPort = 1;
+              break;
+            case TOR:
+            case CONTROLLERSWITCH:
+                egressPort = hash(dest);
+            break;
+        }
+    return egressPort;
+}
+
 int Switch::miss_table_search(uint64_t dest){
     int egressPort;
     switch((int)par("Type")){
             case TOR:
-                egressPort = (int)ceil((float)dest/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
+                egressPort = hash(dest);
 
                 //if(dest < 5000)egressPort = 1;
                 //else egressPort = 2;
@@ -128,6 +151,10 @@ void Switch::evict_rule(){
 
     cache.erase(min_rule);
 
+}
+
+int Switch::hash(uint64_t dest){
+    return (int)ceil((float)dest/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
 }
 
 
