@@ -17,6 +17,7 @@
 #include "Definitions.h"
 #include "messages_m.h"
 
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -34,6 +35,8 @@ void Rack::initialize()
 {
     simtime_t arrival_time;
     uint64_t destination;
+
+    int_to_ip(5);
 
     id = getIndex();
     file_pointer = 0;
@@ -70,7 +73,7 @@ void Rack::handleMessage(cMessage *message)
    switch(message->getKind()){
         case GENERATEPACKET:
           DataPacket *genpack = check_and_cast<DataPacket *>(message);
-          DataPacket *msg = new DataPacket; //("Data Packet")
+          DataPacket *msg = new DataPacket("Data Packet");
           msg->setKind(DATAPACKET);
           uint64_t destination = genpack->getDestination();
           msg->setDestination(destination);

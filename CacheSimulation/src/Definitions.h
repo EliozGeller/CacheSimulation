@@ -6,6 +6,7 @@
 #define GENERATEPACKET 1
 #define DATAPACKET 2
 #define INSERTRULE 3
+#define HITPACKET 4
 
 //Hardware
 #define POLICYSIZE 10000
@@ -25,3 +26,9 @@
 #define TOR 1001
 #define AGGREGATION 1002
 #define CONTROLLERSWITCH 1003
+
+
+//General Functions:
+uint64_t ip_to_int( std::string s); // Convert a string ip to number
+std::string int_to_ip(uint64_t n);  // Convert a number to string ip
+

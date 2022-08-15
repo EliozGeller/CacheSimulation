@@ -13,6 +13,9 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
+
+
+
 #include "Destination.h"
 #include "Definitions.h"
 #include "messages_m.h"
@@ -24,14 +27,26 @@ Define_Module(Destination);
 
 void Destination::initialize()
 {
-
+    miss_count.setName("miss count");
 }
 
 void Destination::handleMessage(cMessage *message)
 {
+    EV << "Destination!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     DataPacket *msg = check_and_cast<DataPacket *>(message);
+    miss_count.collect(msg->getMiss_hop());
     delete msg;
 
+}
+
+void Destination::finish()
+{
+    // This function is called by OMNeT++ at the end of the simulation.
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "Miss count, mean:   " << miss_count.getMean() << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+
+    miss_count.recordAs("miss count");
 }
 
 }; // namespace

@@ -1,0 +1,43 @@
+version 2
+run General-0-20220815-10:57:36-1216
+attr configname General
+attr datetime 20220815-10:57:36
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsf ""
+attr measurement ""
+attr network Network
+attr processid 1216
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+param Network.NumOfToRs 3
+param Network.NumOfAggregation 2
+param Network.linedelay 0.2
+param Network.tor[*].CacheSize 1000
+param Network.agg[*].CacheSize 1000
+param Network.controllerswitch.CacheSize 1000
+param Network.tor[*].Type 1001
+param Network.agg[*].Type 1002
+param Network.controllerswitch.Type 1003
+param Network.tor[*].threshold 2
+param Network.agg[*].threshold 2
+param Network.controllerswitch.threshold 2
+
+statistic Network.dest "miss count"
+field count 432404
+field mean 0.020325898927855
+field stddev 0.18469574786718
+field min 0
+field max 2
+field sum 8789
+field sqrsum 14929
+bin	-inf	0
+bin	0	426685
+bin	1	2649
+bin	2	3070
+bin	3	0
+

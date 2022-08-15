@@ -27,9 +27,12 @@ namespace cachesimulation {
  */
 class Destination : public cSimpleModule
 {
+  private:
+    cHistogram miss_count;
   protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    virtual void initialize() override;
+    virtual void handleMessage(cMessage *msg) override;
+    virtual void finish() override;
 };
 
 }; // namespace

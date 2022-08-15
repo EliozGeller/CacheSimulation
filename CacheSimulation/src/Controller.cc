@@ -24,19 +24,30 @@ Define_Module(Controller);
 
 void Controller::initialize()
 {
-
+    packet_counter = 0;
 }
 
 void Controller::handleMessage(cMessage *message)
 {
-
+    packet_counter++;
     DataPacket *msg = check_and_cast<DataPacket *>(message);
-    ControlPacket *conpacket = new ControlPacket; //("Insert rule Packet")
+    ControlPacket *conpacket = new ControlPacket("Insert rule Packet");
     conpacket->setKind(INSERTRULE);
     conpacket->setRule(msg->getDestination());
     send(conpacket, "port$o", 0);
     delete msg;
 
 }
+
+void Controller::finish()
+{
+    // This function is called by OMNeT++ at the end of the simulation.
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "Total arrived packets in the Controller:   " << packet_counter << endl;
+    EV << "Time in the Controller:   " << simTime() << endl;
+    EV << "Average throughput in the Controller:   " << (float)(packet_counter / simTime()) << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+}
+
 
 }; // namespace

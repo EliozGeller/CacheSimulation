@@ -27,9 +27,12 @@ namespace cachesimulation {
  */
 class Controller : public cSimpleModule
 {
+  private:
+    unsigned long long int packet_counter;
   protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    virtual void initialize() override;
+    virtual void handleMessage(cMessage *msg) override;
+    virtual void finish() override;
 };
 
 }; // namespace

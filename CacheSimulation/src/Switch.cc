@@ -33,22 +33,23 @@ void Switch::initialize()
 void Switch::handleMessage(cMessage *message)
 {
     int egressPort;
-
-
-    if(message->getKind() == DATAPACKET){
+    EV << "Switchhhhhhh!!!!!!!!!!"<<endl;
+    int kind_of_packet = message->getKind();
+    if(kind_of_packet == DATAPACKET || kind_of_packet == HITPACKET){
         DataPacket *msg = check_and_cast<DataPacket *>(message);
+        EV << "Dest in handle = "<<msg->getDestination()<<endl;
         if(msg->getExternal_destination() == 1){
-            egressPort = 1;
+            egressPort = hit_forward(msg->getDestination());
         }
         else {
             switch(cache_search(msg->getDestination())){
                 case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
-                    if((int)par("Type") == TOR)return;
-                    fc_send(msg);
+                    if((int)par("Type") != TOR)fc_send(msg);
                     //break; //in purpose
                 case FOUND:
                     egressPort = hit_forward(msg->getDestination());
                     msg->setExternal_destination(1);
+                    msg->setKind(HITPACKET);
                     break;
                 case NOTFOUND:
                     egressPort = miss_table_search(msg->getDestination());
@@ -56,11 +57,11 @@ void Switch::handleMessage(cMessage *message)
                     break;
          }
         }
-        EV << "Dest in handle = "<<msg->getDestination()<<endl;
+        EV << "egressPort in Switch = "<<egressPort<<endl;
         send(msg, "port$o", egressPort);
 
     }
-    if(message->getKind() == INSERTRULE){
+    if(kind_of_packet == INSERTRULE){
         ControlPacket *pck = check_and_cast<ControlPacket *>(message);
                   if(cache.size() >= (int)par("CacheSize")){ //evict rule by LRU
                       evict_rule();
@@ -78,7 +79,7 @@ void Switch::fc_send(cMessage *message){
     int arrivalGate;
     if(gate)arrivalGate = gate->getIndex();   //Get arrivalport
     else return;
-    ControlPacket *conpacket = new ControlPacket; //("Insert rule Packet")
+    ControlPacket *conpacket = new ControlPacket("Insert rule Packet");
     conpacket->setKind(INSERTRULE);
     conpacket->setRule(msg->getDestination());
     send(conpacket, "port$o", arrivalGate);

@@ -31,11 +31,12 @@ network Network
         @display("i=block/routing");
         int NumOfToRs;
         int NumOfAggregation;
+        double linedelay;
         @display("bgb=725,450");
     types:
         channel C extends ned.DelayChannel
         {
-            delay = 0.2ms;
+            delay = 0.2 ms;
         }
     submodules:
         rack[NumOfToRs]: Rack {
