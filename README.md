@@ -13,5 +13,6 @@ Aggregations: <br />
   port 2,.... connect to ToRs <br />
 Controller Switch: <br />
   port 0 connect to controller <br />
+  port 1,.... connect to aggregations <br />
 Controller: <br />
   connect to controller switch <br />
