@@ -20,6 +20,7 @@ packet DataPacket
     uint64_t destination;
     uint64_t external_destination = 0;
     int miss_hop = 0;
+    string id;
 }
 
 packet ControlPacket

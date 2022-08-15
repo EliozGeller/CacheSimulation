@@ -15,7 +15,7 @@
 
 #include "Rack.h"
 #include "Definitions.h"
-#include "messages_m.h"
+
 
 
 #include <fstream>
@@ -49,21 +49,11 @@ void Rack::initialize()
     std::ifstream ifs(path);
     trace = json::parse(ifs);
 
-
+    //generate first packet:
     DataPacket *message = new DataPacket("Generate packet message");
     message->setKind(GENERATEPACKET);
-    if(USE_TRAFFIC_GENERATOR == 1){// Generate from traffic generator
-        arrival_time = (simtime_t)trace[file_pointer][3];
-        std::string dest_string =  trace[file_pointer][1];
-        destination = (uint64_t)std::stoi( dest_string );
-    }
-    else{// Generate exponential time
-       arrival_time = exponential(RACKRATE);
-       destination = (uint64_t)uniform(0,POLICYSIZE);
-    }
-    message->setDestination(destination);
-    scheduleAt(arrival_time,message);
-    file_pointer++;
+    generate_new_packet(message);
+
 
     EV << "trace size : "<< trace.size()<< endl;
 }
@@ -79,6 +69,7 @@ void Rack::handleMessage(cMessage *message)
           msg->setKind(DATAPACKET);
           uint64_t destination = genpack->getDestination();
           msg->setDestination(destination);
+          msg->setId(genpack->getId());
           EV << "destination in rack = "<< destination<< endl;
           send(msg, "port$o", 0);
 
@@ -88,20 +79,29 @@ void Rack::handleMessage(cMessage *message)
 
 
           //Generate new packet:
-          if(USE_TRAFFIC_GENERATOR == 1){// Generate from traffic generator
-              arrival_time = (simtime_t)trace[file_pointer][3];
-              std::string dest_string =  trace[file_pointer][1];
-              new_destination = (uint64_t)std::stoi( dest_string );
-          }
-          else{// Generate exponential time
-              arrival_time = exponential(RACKRATE);
-              new_destination = (uint64_t)uniform(0,POLICYSIZE);
-          }
-          genpack->setDestination(new_destination);
-          scheduleAt(arrival_time,genpack);
-          file_pointer++;
+          generate_new_packet(genpack);
           break;
     }
+}
+
+void Rack::generate_new_packet(DataPacket *msg){
+    simtime_t arrival_time;
+    uint64_t destination;
+
+    if(USE_TRAFFIC_GENERATOR == 1){// Generate from traffic generator
+            arrival_time = (simtime_t)trace[file_pointer][3];
+            std::string dest_string =  trace[file_pointer][1];
+            destination = (uint64_t)std::stoi( dest_string );
+    }
+    else{// Generate exponential time
+           arrival_time = simTime() + exponential(RACKRATE);
+           destination = (uint64_t)uniform(0,POLICYSIZE);
+    }
+    msg->setDestination(destination);
+    std::string id =  trace[file_pointer][4];
+    msg->setId(id.c_str());
+    scheduleAt(arrival_time,msg);
+    file_pointer++;
 }
 
 }; // namespace

@@ -27,6 +27,18 @@ std::string int_to_ip(uint64_t n){
 }
 
 
+std::string get_flow(const std::string& str)
+{
+  std::size_t found = str.find_last_of(".");
+  return str.substr(0,found);
+}
+
+long long int get_sequence(const std::string& str)
+{
+  std::size_t found = str.find_last_of(".");
+  return std::stoll(str.substr(found+1));
+}
+
 
 
 /*

@@ -18,7 +18,7 @@
 
 #include "Destination.h"
 #include "Definitions.h"
-#include "messages_m.h"
+
 
 
 namespace cachesimulation {
@@ -28,15 +28,22 @@ Define_Module(Destination);
 void Destination::initialize()
 {
     miss_count.setName("miss count");
+    out_of_order.setName("out of order");
     packet_counter = 0;
 }
 
 void Destination::handleMessage(cMessage *message)
 {
     packet_counter++;
-    EV << "Destination!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     DataPacket *msg = check_and_cast<DataPacket *>(message);
+    EV <<" id = " <<msg->getId() << endl;
+
+    //statistics for miss count
     miss_count.collect(msg->getMiss_hop());
+
+    //statistics for out of order
+    out_of_order_statistics(msg);
+
     delete msg;
 
 }
@@ -50,6 +57,15 @@ void Destination::finish()
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     miss_count.recordAs("miss count");
+    out_of_order.recordAs("out of order");
 }
+
+void Destination::out_of_order_statistics(DataPacket* msg)
+{
+    long long int diff = get_sequence(msg->getId()) - expected_sequence[get_flow(msg->getId())];
+    out_of_order.collect(diff);
+    expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId());
+}
+
 
 }; // namespace

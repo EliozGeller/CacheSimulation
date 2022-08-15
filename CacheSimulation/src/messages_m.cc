@@ -209,6 +209,7 @@ void DataPacket::copy(const DataPacket& other)
     this->destination = other.destination;
     this->external_destination = other.external_destination;
     this->miss_hop = other.miss_hop;
+    this->id = other.id;
 }
 
 void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -217,6 +218,7 @@ void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->destination);
     doParsimPacking(b,this->external_destination);
     doParsimPacking(b,this->miss_hop);
+    doParsimPacking(b,this->id);
 }
 
 void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -225,6 +227,7 @@ void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->destination);
     doParsimUnpacking(b,this->external_destination);
     doParsimUnpacking(b,this->miss_hop);
+    doParsimUnpacking(b,this->id);
 }
 
 uint64_t DataPacket::getDestination() const
@@ -255,6 +258,16 @@ int DataPacket::getMiss_hop() const
 void DataPacket::setMiss_hop(int miss_hop)
 {
     this->miss_hop = miss_hop;
+}
+
+const char * DataPacket::getId() const
+{
+    return this->id.c_str();
+}
+
+void DataPacket::setId(const char * id)
+{
+    this->id = id;
 }
 
 class DataPacketDescriptor : public omnetpp::cClassDescriptor
@@ -322,7 +335,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 3+basedesc->getFieldCount() : 3;
+    return basedesc ? 4+basedesc->getFieldCount() : 4;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -337,8 +350,9 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<3) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<4) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -353,8 +367,9 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "destination",
         "external_destination",
         "miss_hop",
+        "id",
     };
-    return (field>=0 && field<3) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<4) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -364,6 +379,7 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='d' && strcmp(fieldName, "destination")==0) return base+0;
     if (fieldName[0]=='e' && strcmp(fieldName, "external_destination")==0) return base+1;
     if (fieldName[0]=='m' && strcmp(fieldName, "miss_hop")==0) return base+2;
+    if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+3;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -379,8 +395,9 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "uint64_t",
         "uint64_t",
         "int",
+        "string",
     };
-    return (field>=0 && field<3) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<4) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -450,6 +467,7 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
         case 0: return uint642string(pp->getDestination());
         case 1: return uint642string(pp->getExternal_destination());
         case 2: return long2string(pp->getMiss_hop());
+        case 3: return oppstring2string(pp->getId());
         default: return "";
     }
 }
@@ -467,6 +485,7 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
         case 0: pp->setDestination(string2uint64(value)); return true;
         case 1: pp->setExternal_destination(string2uint64(value)); return true;
         case 2: pp->setMiss_hop(string2long(value)); return true;
+        case 3: pp->setId((value)); return true;
         default: return false;
     }
 }

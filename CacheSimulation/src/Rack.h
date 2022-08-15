@@ -18,6 +18,7 @@
 
 #include <omnetpp.h>
 #include "json.hpp"
+#include "messages_m.h"
 
 using json = nlohmann::json;
 using namespace omnetpp;
@@ -36,6 +37,7 @@ private:
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void generate_new_packet(DataPacket *msg);
 };
 
 }; // namespace

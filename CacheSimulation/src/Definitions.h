@@ -10,7 +10,7 @@
 
 //Hardware
 #define POLICYSIZE 10000
-#define RACKRATE 0.1 //Necessary if the traffic generator is not used
+#define RACKRATE 0.00001 //Necessary if the traffic generator is not used
 
 //General:
 #define NOTFOUND 2 //MISS
@@ -31,4 +31,7 @@
 //General Functions:
 uint64_t ip_to_int( std::string s); // Convert a string ip to number
 std::string int_to_ip(uint64_t n);  // Convert a number to string ip
+
+std::string get_flow(const std::string& str);
+long long int get_sequence(const std::string& str);
 
