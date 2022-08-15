@@ -28,10 +28,12 @@ Define_Module(Destination);
 void Destination::initialize()
 {
     miss_count.setName("miss count");
+    packet_counter = 0;
 }
 
 void Destination::handleMessage(cMessage *message)
 {
+    packet_counter++;
     EV << "Destination!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     DataPacket *msg = check_and_cast<DataPacket *>(message);
     miss_count.collect(msg->getMiss_hop());
@@ -43,7 +45,8 @@ void Destination::finish()
 {
     // This function is called by OMNeT++ at the end of the simulation.
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "Miss count, mean:   " << miss_count.getMean() << endl;
+    EV << "Miss count in the Destination, mean:   " << miss_count.getMean() << endl;
+    EV << "Total arrived packets in the Destination:   " << packet_counter << endl;
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     miss_count.recordAs("miss count");

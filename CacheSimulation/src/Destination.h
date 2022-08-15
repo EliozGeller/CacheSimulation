@@ -29,6 +29,7 @@ class Destination : public cSimpleModule
 {
   private:
     cHistogram miss_count;
+    unsigned long long int packet_counter;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

@@ -64,6 +64,8 @@ void Rack::initialize()
     message->setDestination(destination);
     scheduleAt(arrival_time,message);
     file_pointer++;
+
+    EV << "trace size : "<< trace.size()<< endl;
 }
 
 void Rack::handleMessage(cMessage *message)

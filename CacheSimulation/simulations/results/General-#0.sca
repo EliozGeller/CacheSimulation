@@ -1,14 +1,14 @@
 version 2
-run General-0-20220815-10:57:36-1216
+run General-0-20220815-11:42:10-19552
 attr configname General
-attr datetime 20220815-10:57:36
+attr datetime 20220815-11:42:10
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 1216
+attr processid 19552
 attr repetition 0
 attr replication #0
 attr resultdir results
@@ -28,16 +28,17 @@ param Network.agg[*].threshold 2
 param Network.controllerswitch.threshold 2
 
 statistic Network.dest "miss count"
-field count 432404
-field mean 0.020325898927855
-field stddev 0.18469574786718
+field count 435962
+field mean 0.044643799230208
+field stddev 0.32511896244366
 field min 0
-field max 2
-field sum 8789
-field sqrsum 14929
+field max 3
+field sum 19463
+field sqrsum 46951
 bin	-inf	0
 bin	0	426685
 bin	1	2649
 bin	2	3070
-bin	3	0
+bin	3	3558
+bin	4	0
 

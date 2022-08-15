@@ -35,7 +35,9 @@ void Controller::handleMessage(cMessage *message)
     conpacket->setKind(INSERTRULE);
     conpacket->setRule(msg->getDestination());
     send(conpacket, "port$o", 0);
-    delete msg;
+    msg->setExternal_destination(1);
+    msg->setKind(HITPACKET);
+    send(msg, "port$o", 0);
 
 }
 
