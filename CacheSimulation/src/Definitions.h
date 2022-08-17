@@ -28,6 +28,15 @@
 #define CONTROLLERSWITCH 1003
 
 
+//Struct of miss table:
+typedef struct{
+    uint64_t low; //low limit
+    uint64_t high; //high limit
+    int port; //egress port
+}partition_rule;
+
+
+
 //General Functions:
 uint64_t ip_to_int( std::string s); // Convert a string ip to number
 std::string int_to_ip(uint64_t n);  // Convert a number to string ip

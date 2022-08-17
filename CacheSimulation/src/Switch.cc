@@ -14,7 +14,6 @@
 //
 
 #include "Switch.h"
-#include "Definitions.h"
 #include "messages_m.h"
 #include <math.h>
 
@@ -27,6 +26,30 @@ Define_Module(Switch);
 void Switch::initialize()
 {
     id = getIndex();
+    if((int)par("Type") == TOR){
+        miss_table_size = getParentModule()->par("NumOfAggregation");
+        miss_table = new partition_rule[miss_table_size];
+
+
+        //
+        uint64_t last = 0;
+        uint64_t diff = (uint64_t)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation")));
+        for(int i = 0;i < miss_table_size;i++){
+            miss_table[i].low = last;
+            miss_table[i].high = last + diff;
+            miss_table[i].port = i + 1;
+            last = last + diff + 1;
+        }
+
+        //
+    }
+    else{
+        miss_table_size = 1;
+        miss_table = new partition_rule[miss_table_size];
+        miss_table[0].low = 0;
+        miss_table[0].high = POLICYSIZE;
+        miss_table[0].port = 0;
+    }
 
 }
 
@@ -119,23 +142,13 @@ int Switch::hit_forward(uint64_t dest){
 
 int Switch::miss_table_search(uint64_t dest){
     int egressPort;
-    switch((int)par("Type")){
-            case TOR:
-                egressPort = hash(dest);
-
-                //if(dest < 5000)egressPort = 1;
-                //else egressPort = 2;
-                EV<<"in Tor:dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
-              break;
-            case AGGREGATION:
-            case CONTROLLERSWITCH:
-                egressPort = 0;
-                EV<<"in Other:dest = "<< dest<< endl<<"egressPort = "<< egressPort<<endl;
-            break;
-
+    for(int i = 0;i < miss_table_size;i++){
+        if(dest >= miss_table[i].low && dest <= miss_table[i].high){
+            egressPort = miss_table[i].port;
+            return egressPort;
         }
+    }
 
-    return egressPort;
 }
 
 void Switch::evict_rule(){
@@ -156,6 +169,10 @@ void Switch::evict_rule(){
 
 int Switch::hash(uint64_t dest){
     return (int)ceil((float)dest/(float)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation"))));
+}
+
+void Switch::finish(){
+    delete[] miss_table;
 }
 
 

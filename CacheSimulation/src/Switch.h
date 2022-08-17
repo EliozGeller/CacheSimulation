@@ -18,6 +18,7 @@
 
 #include <omnetpp.h>
 #include <map>
+#include "Definitions.h"
 
 using namespace omnetpp;
 
@@ -36,9 +37,12 @@ class Switch : public cSimpleModule
   private:
     int id;
     std::map<uint64_t, ruleStruct> cache;
+    partition_rule* miss_table;
+    int miss_table_size;
   protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    virtual void initialize() override;
+    virtual void handleMessage(cMessage *msg) override;
+    virtual void finish() override;
     virtual int cache_search(uint64_t rule);
     virtual int miss_table_search(uint64_t rule);
     virtual void evict_rule();
