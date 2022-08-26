@@ -13,6 +13,8 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+
+
 namespace cachesimulation;
 
 packet DataPacket
@@ -21,12 +23,33 @@ packet DataPacket
     uint64_t external_destination = 0;
     int miss_hop = 0;
     string id;
+    int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
 }
 
-packet ControlPacket
+packet InsertionPacket
 {
     uint64_t rule;
+    int type; //Push or Pull //delete
+    int switch_type; //ToR,Aggregation or controller switch
+    int destination; //The switch id
 }
+
+packet Data_for_partition
+{
+    uint64_t counters[100]; //Should be the size of the aggregation number
+}
+
+packet Partition_update_msg
+{
+    uint64_t lows[100]; //Should be the size of the aggregation number
+    uint64_t highs[100]; //Should be the size of the aggregation number
+    int ports[100]; //Should be the size of the aggregation number
+}
+
+
+
+
+
 
 
 

@@ -1,21 +1,21 @@
 version 2
-run General-0-20220817-16:56:07-17732
+run General-0-20220826-18:15:24-16288
 attr configname General
-attr datetime 20220817-16:56:07
+attr datetime 20220826-18:15:24
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 17732
+attr processid 16288
 attr repetition 0
 attr replication #0
 attr resultdir results
 attr runnumber 0
 attr seedset 0
-param Network.NumOfToRs 3
-param Network.NumOfAggregation 2
+param Network.NumOfToRs 5
+param Network.NumOfAggregation 3
 param Network.linedelay 0.2
 param Network.tor[*].CacheSize 1000
 param Network.agg[*].CacheSize 1000
@@ -28,28 +28,49 @@ param Network.agg[*].threshold 2
 param Network.controllerswitch.threshold 2
 
 statistic Network.dest "miss count"
-field count 2
-field mean 2.5
-field stddev 0.70710678118655
-field min 2
+field count 768090
+field mean 0.33612337095913
+field stddev 0.53969404183178
+field min 0
 field max 3
-field sum 5
-field sqrsum 13
+field sum 258173
+field sqrsum 310499
 bin	-inf	0
-bin	1	0
-bin	2	1
-bin	3	1
+bin	0	533863
+bin	1	212498
+bin	2	19512
+bin	3	2217
 bin	4	0
 statistic Network.dest "out of order"
-field count 2
-field mean 0.5
-field stddev 0.70710678118655
-field min 0
-field max 1
-field sum 1
-field sqrsum 1
+field count 768090
+field mean 0.00071736385059043
+field stddev 3.1195349090379
+field min -9
+field max 9
+field sum 551
+field sqrsum 7474657
 bin	-inf	0
-bin	0	1
-bin	1	1
-bin	2	0
+bin	-12	0
+bin	-11	0
+bin	-10	0
+bin	-9	69822
+bin	-8	1685
+bin	-7	2362
+bin	-6	2811
+bin	-5	3893
+bin	-4	4205
+bin	-3	5279
+bin	-2	7415
+bin	-1	5403
+bin	0	7638
+bin	1	630794
+bin	2	4756
+bin	3	6657
+bin	4	4240
+bin	5	3437
+bin	6	3196
+bin	7	2196
+bin	8	1495
+bin	9	806
+bin	10	0
 

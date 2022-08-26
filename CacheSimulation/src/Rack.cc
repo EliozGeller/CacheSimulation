@@ -36,7 +36,6 @@ void Rack::initialize()
     simtime_t arrival_time;
     uint64_t destination;
 
-    int_to_ip(5);
 
     id = getIndex();
     file_pointer = 0;

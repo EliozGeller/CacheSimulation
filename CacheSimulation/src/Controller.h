@@ -17,6 +17,8 @@
 #define __CACHESIMULATION_TCX_H
 
 #include <omnetpp.h>
+#include "Definitions.h"
+#include "messages_m.h"
 
 using namespace omnetpp;
 
@@ -29,10 +31,14 @@ class Controller : public cSimpleModule
 {
   private:
     unsigned long long int packet_counter;
+    partition_rule* partition;
+    int miss_table_size;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
+    virtual void partition_calculation(Data_for_partition* msg);
+    virtual void update_miss_forwarding();
 };
 
 }; // namespace

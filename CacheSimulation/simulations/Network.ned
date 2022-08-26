@@ -34,7 +34,7 @@ network Network
     types:
         channel C extends ned.DelayChannel
         {
-            delay = 0.5 us; //micros
+            delay = 0.1 us; //micros
         }
     submodules:
         rack[NumOfToRs]: Rack {

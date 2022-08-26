@@ -17,17 +17,16 @@
 #define __CACHESIMULATION_TCX_H
 
 #include <omnetpp.h>
+#include "messages_m.h"
 #include <map>
 #include "Definitions.h"
+
 
 using namespace omnetpp;
 
 namespace cachesimulation {
 
-typedef struct{
-    int count;
-    simtime_t last_time;
-}ruleStruct;
+
 
 /**
  * Implements the Txc simple module. See the NED file for more information.
@@ -37,18 +36,21 @@ class Switch : public cSimpleModule
   private:
     int id;
     std::map<uint64_t, ruleStruct> cache;
+    std::map<uint64_t, elephant_struct> elephant_table;
     partition_rule* miss_table;
     int miss_table_size;
+    unsigned long int elephant_count; //Counter for sampling packets in RX
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
     virtual int cache_search(uint64_t rule);
     virtual int miss_table_search(uint64_t rule);
-    virtual void evict_rule();
-    virtual void fc_send(cMessage *msg);
+    virtual uint64_t which_rule_to_evict(int s);
+    virtual void fc_send(DataPacket *msg);
     virtual int hash(uint64_t dest);
     virtual int hit_forward(uint64_t dest);
+    virtual int internal_forwarding_port (InsertionPacket *msg);
 
 };
 

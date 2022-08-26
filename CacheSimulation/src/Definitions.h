@@ -1,16 +1,55 @@
+using namespace omnetpp;
+
 //Traffic Generator:
 #define USE_TRAFFIC_GENERATOR 1 //Put 1 to use traffic generator and 0 to generate traffic with OMNET random functions
 
 
-//Messages Type:
+//Messages Type: (Must be different!!)
 #define GENERATEPACKET 1
 #define DATAPACKET 2
-#define INSERTRULE 3
-#define HITPACKET 4
+#define INSERTRULE_PUSH 3
+#define INSERTRULE_PULL 4
+#define HITPACKET 5
+#define RULE_REQUEST 6
+#define DATA_FOR_PARTITION 7
+#define FLUSH_ELEPHANT_PKT 8
+#define CHECK_FOR_ELEPHANT_PKT 9
+#define INSERTION_DELAY_PCK 10
+#define EVICTION_DELAY_PCK 11
 
 //Hardware
 #define POLICYSIZE 10000
 #define RACKRATE 0.00001 //Necessary if the traffic generator is not used
+
+//Delays:
+#define MICROSECOND 0.000001
+#define PROCESSING_TIME_ON_AD_DATA_PACKET 0.1*MICROSECOND
+#define INSERTION_DELAY 2*MICROSECOND
+#define EVICTION_DELAY 2*MICROSECOND
+
+//Rule insertion:
+#define PULL 1//delete
+#define PUSH 2//delete
+
+//Evictions of rules:
+#define CACHE_PERCENTAGE 0.8
+#define SAMPLE_SIZE 5 //The number of rules you sample and from will be evicted according to LRU
+//#define RANDOM 1   //set 1 for random eviction or 0 for power of two choices
+
+
+
+//Elephant Detector
+#define ELEPHANT_TABLE_SIZE 50
+#define FLUSH_ELEPHANT_TIME 100*MICROSECOND
+#define CHECK_FOR_ELEPHANT_TIME 10*MICROSECOND
+#define ELEPHANT_SAMPLE_RX 1 //Every few packets we will sample a packet in RX
+#define BANDWIDTH_ELEPHANT_THRESHOLD 1
+#define ALREADY_REQUESTED_THRESHOLD 0.0001
+
+
+
+//Partition:
+#define PARTITION_RATE 0.05 //The rate at which the partition will be made
 
 //General:
 #define NOTFOUND 2 //MISS
@@ -28,10 +67,27 @@
 #define CONTROLLERSWITCH 1003
 
 
-//Struct of miss table:
+
+//Structs:
+//Struct of a rule in the cache
+typedef struct{
+    unsigned long int count;
+    simtime_t last_time;
+}ruleStruct;
+
+//Elephant struct
+typedef struct{
+    unsigned long int count;
+    unsigned long int byte_count; //necessary?
+    simtime_t last_time;
+    simtime_t first_appearance;
+}elephant_struct;
+
+//Struct of partition rule for the miss table:
 typedef struct{
     uint64_t low; //low limit
     uint64_t high; //high limit
+    uint64_t range_size; //The size of the address range that the rule covers
     int port; //egress port
 }partition_rule;
 

@@ -20,7 +20,7 @@
 namespace cachesimulation {
 
 /**
- * Class generated from <tt>messages.msg:19</tt> by nedtool.
+ * Class generated from <tt>messages.msg:21</tt> by nedtool.
  * <pre>
  * packet DataPacket
  * {
@@ -28,6 +28,7 @@ namespace cachesimulation {
  *     uint64_t external_destination = 0;
  *     int miss_hop = 0;
  *     string id;
+ *     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
  * }
  * </pre>
  */
@@ -38,6 +39,7 @@ class DataPacket : public ::omnetpp::cPacket
     uint64_t external_destination;
     int miss_hop;
     ::omnetpp::opp_string id;
+    int request;
 
   private:
     void copy(const DataPacket& other);
@@ -64,48 +66,150 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setMiss_hop(int miss_hop);
     virtual const char * getId() const;
     virtual void setId(const char * id);
+    virtual int getRequest() const;
+    virtual void setRequest(int request);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:27</tt> by nedtool.
+ * Class generated from <tt>messages.msg:30</tt> by nedtool.
  * <pre>
- * packet ControlPacket
+ * packet InsertionPacket
  * {
  *     uint64_t rule;
+ *     int type; //Push or Pull //delete
+ *     int switch_type; //ToR,Aggregation or controller switch
+ *     int destination; //The switch id
  * }
  * </pre>
  */
-class ControlPacket : public ::omnetpp::cPacket
+class InsertionPacket : public ::omnetpp::cPacket
 {
   protected:
     uint64_t rule;
+    int type;
+    int switch_type;
+    int destination;
 
   private:
-    void copy(const ControlPacket& other);
+    void copy(const InsertionPacket& other);
 
   protected:
     // protected and unimplemented operator==(), to prevent accidental usage
-    bool operator==(const ControlPacket&);
+    bool operator==(const InsertionPacket&);
 
   public:
-    ControlPacket(const char *name=nullptr, short kind=0);
-    ControlPacket(const ControlPacket& other);
-    virtual ~ControlPacket();
-    ControlPacket& operator=(const ControlPacket& other);
-    virtual ControlPacket *dup() const override {return new ControlPacket(*this);}
+    InsertionPacket(const char *name=nullptr, short kind=0);
+    InsertionPacket(const InsertionPacket& other);
+    virtual ~InsertionPacket();
+    InsertionPacket& operator=(const InsertionPacket& other);
+    virtual InsertionPacket *dup() const override {return new InsertionPacket(*this);}
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
     // field getter/setter methods
     virtual uint64_t getRule() const;
     virtual void setRule(uint64_t rule);
+    virtual int getType() const;
+    virtual void setType(int type);
+    virtual int getSwitch_type() const;
+    virtual void setSwitch_type(int switch_type);
+    virtual int getDestination() const;
+    virtual void setDestination(int destination);
 };
 
-inline void doParsimPacking(omnetpp::cCommBuffer *b, const ControlPacket& obj) {obj.parsimPack(b);}
-inline void doParsimUnpacking(omnetpp::cCommBuffer *b, ControlPacket& obj) {obj.parsimUnpack(b);}
+inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj) {obj.parsimPack(b);}
+inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
+
+/**
+ * Class generated from <tt>messages.msg:38</tt> by nedtool.
+ * <pre>
+ * packet Data_for_partition
+ * {
+ *     uint64_t counters[100]; //Should be the size of the aggregation number
+ * }
+ * </pre>
+ */
+class Data_for_partition : public ::omnetpp::cPacket
+{
+  protected:
+    uint64_t counters[100];
+
+  private:
+    void copy(const Data_for_partition& other);
+
+  protected:
+    // protected and unimplemented operator==(), to prevent accidental usage
+    bool operator==(const Data_for_partition&);
+
+  public:
+    Data_for_partition(const char *name=nullptr, short kind=0);
+    Data_for_partition(const Data_for_partition& other);
+    virtual ~Data_for_partition();
+    Data_for_partition& operator=(const Data_for_partition& other);
+    virtual Data_for_partition *dup() const override {return new Data_for_partition(*this);}
+    virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
+    virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
+
+    // field getter/setter methods
+    virtual unsigned int getCountersArraySize() const;
+    virtual uint64_t getCounters(unsigned int k) const;
+    virtual void setCounters(unsigned int k, uint64_t counters);
+};
+
+inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& obj) {obj.parsimPack(b);}
+inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
+
+/**
+ * Class generated from <tt>messages.msg:43</tt> by nedtool.
+ * <pre>
+ * packet Partition_update_msg
+ * {
+ *     uint64_t lows[100]; //Should be the size of the aggregation number
+ *     uint64_t highs[100]; //Should be the size of the aggregation number
+ *     int ports[100]; //Should be the size of the aggregation number
+ * }
+ * </pre>
+ */
+class Partition_update_msg : public ::omnetpp::cPacket
+{
+  protected:
+    uint64_t lows[100];
+    uint64_t highs[100];
+    int ports[100];
+
+  private:
+    void copy(const Partition_update_msg& other);
+
+  protected:
+    // protected and unimplemented operator==(), to prevent accidental usage
+    bool operator==(const Partition_update_msg&);
+
+  public:
+    Partition_update_msg(const char *name=nullptr, short kind=0);
+    Partition_update_msg(const Partition_update_msg& other);
+    virtual ~Partition_update_msg();
+    Partition_update_msg& operator=(const Partition_update_msg& other);
+    virtual Partition_update_msg *dup() const override {return new Partition_update_msg(*this);}
+    virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
+    virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
+
+    // field getter/setter methods
+    virtual unsigned int getLowsArraySize() const;
+    virtual uint64_t getLows(unsigned int k) const;
+    virtual void setLows(unsigned int k, uint64_t lows);
+    virtual unsigned int getHighsArraySize() const;
+    virtual uint64_t getHighs(unsigned int k) const;
+    virtual void setHighs(unsigned int k, uint64_t highs);
+    virtual unsigned int getPortsArraySize() const;
+    virtual int getPorts(unsigned int k) const;
+    virtual void setPorts(unsigned int k, int ports);
+};
+
+inline void doParsimPacking(omnetpp::cCommBuffer *b, const Partition_update_msg& obj) {obj.parsimPack(b);}
+inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Partition_update_msg& obj) {obj.parsimUnpack(b);}
 
 } // namespace cachesimulation
 
