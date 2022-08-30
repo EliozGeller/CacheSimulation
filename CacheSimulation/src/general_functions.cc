@@ -39,6 +39,10 @@ long long int get_sequence(const std::string& str)
   return std::stoll(str.substr(found+1));
 }
 
+std::string create_id(int x,int y,int z){
+    std::string s = "";
+    return s + std::to_string(x) + "." + std::to_string(y) + "." + std::to_string(z);
+}
 
 
 /*

@@ -13,28 +13,35 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package cachesimulation;
+#ifndef __CACHESIMULATION_TCX_H
+#define __CACHESIMULATION_TCX_H
 
-//
-// Immediately sends out any message it receives. It can optionally generate
-// a message at the beginning of the simulation, to bootstrap the process.
-//
-module Rack
+#include <omnetpp.h>
+#include "messages_m.h"
+
+using namespace omnetpp;
+
+namespace cachesimulation {
+
+/**
+ * Implements the Txc simple module. See the NED file for more information.
+ */
+class Host : public cSimpleModule
 {
-    parameters:
-        int number_of_hosts;
-    gates:
-        inout port[];
-    submodules:
-        hub: Hub {
-            @display("p=363,69");
-        }
-        host[number_of_hosts]: Host {
-            @display("p=363,290,r,50");
-        }
-    connections:
-        hub.port++ <--> port++;
-        for i=0..number_of_hosts-1 {
-            host[i].port++ <--> hub.port++;
-        }
-}
+private:
+   int id;
+   uint64_t destination;
+   long long int flow_size; //in bytes
+   long long int flowlet_size;
+   int number_of_flowlet;
+   int flowlet_count;
+   uint64_t sequence;
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+    virtual uint64_t draw_flow_size();
+};
+
+}; // namespace
+
+#endif

@@ -19,6 +19,7 @@ import cachesimulation.Rack;
 import cachesimulation.Switch;
 import cachesimulation.Controller;
 import cachesimulation.Destination;
+import cachesimulation.Host;
 
 
 
