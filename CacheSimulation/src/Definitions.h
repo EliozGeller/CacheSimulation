@@ -1,6 +1,5 @@
 using namespace omnetpp;
 
-
 //Hardware
 #define POLICYSIZE 10000
 
@@ -30,9 +29,9 @@ using namespace omnetpp;
 
 
 //Traffic Generator:
-#define USE_TRAFFIC_GENERATOR 1 //Put 1 to use traffic generator and 0 to generate traffic with OMNET random functions
-#define INTER_ARRIVAL_TIME_BETWEEN_FLOWLETS 1*MICROSECOND //change
-#define INTER_ARRIVAL_TIME_BETWEEN_PACKETS 0.5*MICROSECOND //change
+//#define USE_TRAFFIC_GENERATOR 1 //Put 1 to use traffic generator and 0 to generate traffic with OMNET random functions
+#define INTER_ARRIVAL_TIME_BETWEEN_PACKETS 7.5*MICROSECOND //change
+#define INTER_ARRIVAL_TIME_BETWEEN_FLOWLETS 7.5*MICROSECOND //change
 
 //Messages Type: (Must be different!!)
 #define GENERATEPACKET 1

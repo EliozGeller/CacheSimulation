@@ -25,6 +25,7 @@ Define_Module(Switch);
 void Switch::initialize()
 {
     id = getIndex();
+    byte_count = 0;
     if((int)par("Type") == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
         miss_table = new partition_rule[miss_table_size];
@@ -78,6 +79,11 @@ void Switch::handleMessage(cMessage *message)
     //Elephant Detector
     if((int)par("Type") == TOR && kind_of_packet == DATAPACKET){ // Act only if this is a Data packet in the ToR
         msg = check_and_cast<DataPacket *>(message);
+        //byte count:
+        byte_count += msg->getByteLength();
+
+        //end of byte_count
+
         uint64_t dest = msg->getDestination();
         if(elephant_table.size() == ELEPHANT_TABLE_SIZE){
             if(elephant_table.count(dest) > 0){//The flow is in the table
@@ -331,6 +337,7 @@ int Switch::hash(uint64_t dest){
 
 void Switch::finish(){
     delete[] miss_table;
+    if((int)par("Type") == TOR)EV << "Bandwidth in ToR "<< id << " is " << abs(8*byte_count/simTime()) << " bps" <<  endl;
 }
 
 

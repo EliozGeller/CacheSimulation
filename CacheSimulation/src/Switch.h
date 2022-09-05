@@ -40,6 +40,7 @@ class Switch : public cSimpleModule
     partition_rule* miss_table;
     int miss_table_size;
     unsigned long int elephant_count; //Counter for sampling packets in RX
+    unsigned long long int byte_count;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

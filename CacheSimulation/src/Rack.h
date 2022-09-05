@@ -17,10 +17,12 @@
 #define __CACHESIMULATION_TCX_H
 
 #include <omnetpp.h>
-#include "json.hpp"
+#include <fstream>
+#include <string>
 #include "messages_m.h"
+#include "Definitions.h"
 
-using json = nlohmann::json;
+using namespace std;
 using namespace omnetpp;
 
 namespace cachesimulation {
@@ -31,13 +33,18 @@ namespace cachesimulation {
 class Rack : public cSimpleModule
 {
 private:
-   int id;
-   unsigned long long int file_pointer;
-   json trace;
+    int id;
+    vector<vector<string>> data_file;
+    vector<vector<string>> size_distribution_file;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    virtual void generate_new_packet(DataPacket *msg);
+    virtual uint64_t draw_flow_size();
+    virtual void read_data_file();
+    //virtual void set_parameters();
+    virtual string get_parameter(vector<vector<string>> content,string key);
+    virtual void create_traffic();
+    virtual void enter_the_traffic_into_the_system();
 };
 
 }; // namespace
