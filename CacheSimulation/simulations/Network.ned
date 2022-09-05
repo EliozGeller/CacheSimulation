@@ -19,7 +19,7 @@ import cachesimulation.Rack;
 import cachesimulation.Switch;
 import cachesimulation.Controller;
 import cachesimulation.Destination;
-import cachesimulation.Host;
+
 
 
 
@@ -32,6 +32,8 @@ network Network
         int NumOfAggregation;
         double linedelay;
         @display("bgb=725,450");
+        int Do_generate_traffic;
+        int generate_online_traffic;
     types:
         channel C extends ned.DelayChannel
         {
