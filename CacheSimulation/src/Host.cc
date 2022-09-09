@@ -22,7 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <stdlib.h>     /* atoi */
+
 
 
 
@@ -34,14 +34,20 @@ Define_Module(Host);
 
 void Host::initialize()
 {
+
+
     sequence = 0;
     id =  getParentModule()->getIndex() * (int)getParentModule()->par("number_of_hosts") + getIndex();
     EV << "id in rack "<<  getParentModule()->getIndex() << " in Host "<< getIndex() << " is " << id << endl;
-    flow_size = draw_destination(); //change
+    //flow_size = draw_flow_size(); //change
+    flow_size = (uint64_t)uniform(0,POLICYSIZE); //change
     destination = (uint64_t)uniform(0,POLICYSIZE); //change
 
+    inter_arrival_time_between_packets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_packets").stdstringValue());
+    inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
 
-    if(flow_size > 100*1000000 /*100 Mbyte*/){
+
+    if(flow_size > stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue()) /*100 Mbyte*/){
         number_of_flowlet = 10;
     }
     else {
@@ -53,7 +59,23 @@ void Host::initialize()
     //generate first packet:
     DataPacket *message = new DataPacket("Generate packet message");
     message->setKind(GENERATEPACKET);
-    scheduleAt(simTime() + exponential(INTER_ARRIVAL_TIME_BETWEEN_PACKETS),message);
+
+
+
+    string start_time_for_flows = getParentModule()->getParentModule()->par("start_time_for_flows").stdstringValue();
+
+    vector<string> row;
+    string  word;
+    stringstream str(start_time_for_flows);
+
+    while(getline(str, word, ','))
+    row.push_back(word);
+
+
+    simtime_t arrival_time = (simtime_t)stold(row[id]);
+    EV << "id = "<< id << endl;
+    EV << "arrival_time = "<< arrival_time << endl;
+    scheduleAt(simTime() + arrival_time,message);
 }
 
 void Host::handleMessage(cMessage *message)
@@ -83,12 +105,12 @@ void Host::handleMessage(cMessage *message)
               }
               else{
                   sequence = 0;
-                  arrival_time = INTER_ARRIVAL_TIME_BETWEEN_FLOWLETS;
+                  arrival_time = inter_arrival_time_between_flowlets;
                   flowlet_size = flow_size/number_of_flowlet;
               }
           }
           else {
-              arrival_time = INTER_ARRIVAL_TIME_BETWEEN_PACKETS;
+              arrival_time = inter_arrival_time_between_packets;
           }
           scheduleAt(simTime() + exponential(arrival_time),genpack);
           break;
@@ -97,13 +119,18 @@ void Host::handleMessage(cMessage *message)
 }
 
 uint64_t Host::draw_flow_size(){
-    std::ifstream ifs(PATH_DISTRIBUTION);
-    std::string line;
-    uint64_t result;
+    /*
+     * Here there is an option to check each row whether it is float or not,
+     *  but right now it is just searching starting from the second row
+     */
+    vector<vector<string>> size_distribution_file = read_data_file(PATH_DISTRIBUTION);
 
-    float y,x = uniform(0, 1);
 
-    return (uint64_t)uniform(0,1000000)
-
+    float x = uniform(0,1);
+    for(int i = 1 /*start from the second row*/;i < size_distribution_file.size();i++){ //
+        if(x < stold(size_distribution_file[i][1])){
+            return (uint64_t)stoull(size_distribution_file[i][0]);
+        }
+    }
 }
 }; // namespace

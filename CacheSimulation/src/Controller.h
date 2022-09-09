@@ -39,6 +39,8 @@ class Controller : public cSimpleModule
     virtual void finish() override;
     virtual void partition_calculation(Data_for_partition* msg);
     virtual void update_miss_forwarding();
+    virtual void set_all_parameters();
+    virtual void initialization_start_time_for_flows();
 };
 
 }; // namespace

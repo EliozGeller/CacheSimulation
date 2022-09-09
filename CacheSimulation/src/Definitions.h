@@ -1,4 +1,9 @@
+#include <fstream>
+#include <string>
+#include <stdlib.h>     /* atoi */
+
 using namespace omnetpp;
+using namespace std;
 
 //Hardware
 #define POLICYSIZE 10000
@@ -6,7 +11,7 @@ using namespace omnetpp;
 
 //Delays:
 #define MICROSECOND 0.000001
-#define PROCESSING_TIME_ON_AD_DATA_PACKET 0.1*MICROSECOND
+#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
 #define INSERTION_DELAY 2*MICROSECOND
 #define EVICTION_DELAY 2*MICROSECOND
 
@@ -67,6 +72,7 @@ using namespace omnetpp;
 //Json file:
 #define PATH "traces/packet_trace"  // The path suffix (".json") is added in the code
 #define PATH_DISTRIBUTION "size_distribution/FB_Hadoop_Inter_Rack_FlowCDF.csv"
+#define PATH_DATA "data/data.csv"
 
 //Switches Type: Fixed i.e Do not change
 #define TOR 1001
@@ -110,4 +116,6 @@ std::string create_id(int x,int y,int z); //Creates an id of type string "x.y.z"
 
 std::string get_flow(const std::string& str);
 long long int get_sequence(const std::string& str);
+string get_parameter(vector<vector<string>> content,string key);
+vector<vector<string>> read_data_file(string fname);
 

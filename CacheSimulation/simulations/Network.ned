@@ -15,10 +15,11 @@
 
 package cachesimulation.simulations;
 
-import cachesimulation.Rack;
+import cachesimulation.Host;
 import cachesimulation.Switch;
 import cachesimulation.Controller;
 import cachesimulation.Destination;
+import cachesimulation.Rack;
 
 
 
@@ -30,33 +31,74 @@ network Network
         @display("i=block/routing");
         int NumOfToRs;
         int NumOfAggregation;
+        int number_of_hosts;
         double linedelay;
         @display("bgb=725,450");
-        int Do_generate_traffic;
-        int generate_online_traffic;
+
+        //int Do_generate_traffic;
+        //int generate_online_traffic;
+        
+        
+        
+        //simulation parameters:
+        	//Hardware:
+                string policy_size;
+                string cache_size;
+            
+            //Delays:
+                string propagation_time;
+                string processing_time_on_data_packet_in_sw;
+                string processing_time_on_data_packet_in_controller;
+                string insertion_delay;
+                string eviction_delay;
+            //Elephant Detector:
+                string elephant_table_size;
+                string flush_elephant_time;
+                string check_for_elephant_time;
+                string elephant_sample_rx;
+                string bandwidth_elephant_threshold;
+                string already_requested_threshold;
+            
+            //Push insertion:
+                string push_threshold_in_aggregation;
+                string push_threshold_in_controller_switch;
+            //Eviction:
+                string cache_percentage;
+                string eviction_sample_size;
+            //Traffic:
+                string inter_arrival_time_between_packets;
+                string inter_arrival_time_between_flowlets;
+                string inter_arrival_time_between_flows;
+                string large_flow;
+            
+            //statrt time of the hosts"
+           	 	string start_time_for_flows;
+        
+        
+        //end simulation parameters
     types:
         channel C extends ned.DelayChannel
         {
             delay = 0.1 us; //micros
         }
     submodules:
+        controller: Controller {
+            @display("p=254,430;i=device/server");
+        }
         rack[NumOfToRs]: Rack {
-            @display("p=363,430,r,50");
+            @display("p=363,430,r,50;i=device/router_l");
         }
         tor[NumOfToRs]: Switch {
-            @display("p=363,349,r,50");
+            @display("p=363,349,r,50;i=device/switch");
         }
         agg[NumOfAggregation]: Switch {
-            @display("p=363,241,r,50");
+            @display("p=363,241,r,50;i=device/switch");
         }
         controllerswitch: Switch {
-            @display("p=254,349");
-        }
-        controller: Controller {
-            @display("p=254,430");
+            @display("p=254,349;i=device/switch");
         }
         dest: Destination {
-            @display("p=363,130");
+            @display("p=363,130;i=abstract/penguin");
         }
     connections:
         for i=0..NumOfToRs-1 {

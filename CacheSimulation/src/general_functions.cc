@@ -44,20 +44,38 @@ std::string create_id(int x,int y,int z){
     return s + std::to_string(x) + "." + std::to_string(y) + "." + std::to_string(z);
 }
 
-
-/*
- *
- *
-#include <arpa/inet.h>
-
-
-int ip_to_int(const char* s){
-    return inet_addr(s);
+string get_parameter(vector<vector<string>> content,string key){
+    for(int i = 0;i < content.size();i++){
+        if(content[i][0] == key)return content[i][10];
+    }
 }
 
-char* int_to_ip(int n){
-    struct in_addr in;
-    in.s_addr = n;
-    return inet_ntoa(in);
+
+vector<vector<string>> read_data_file(string fname){
+    vector<vector<string>> data_file;
+
+    vector<string> row;
+    string line, word;
+
+
+    //Read the data file:
+    fstream file;
+    file.open(fname, ios::in);
+    if(file.is_open())
+    {
+        while(getline(file, line))
+        {
+            row.clear();
+
+            stringstream str(line);
+
+            while(getline(str, word, ','))
+                row.push_back(word);
+            data_file.push_back(row);
+        }
+    }
+    else
+        cout<<"Could not open the file\n";
+    file.close();
+    return data_file;
 }
- */

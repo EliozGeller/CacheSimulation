@@ -35,6 +35,7 @@ class Switch : public cSimpleModule
 {
   private:
     int id;
+    uint64_t policy_size;
     std::map<uint64_t, ruleStruct> cache;
     std::map<uint64_t, elephant_struct> elephant_table;
     partition_rule* miss_table;

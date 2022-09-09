@@ -24,8 +24,30 @@ Define_Module(Switch);
 
 void Switch::initialize()
 {
+
+    //
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+
+    EV << stoi(getParentModule()->par("policy_size").stdstringValue()) << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+
+    //
+
+    //real start:
     id = getIndex();
     byte_count = 0;
+    policy_size = stoull(getParentModule()->par("policy_size").stdstringValue());
+    if(par("Type").intValue() == AGGREGATION){
+        par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
+    }
+    if(par("Type").intValue() == CONTROLLERSWITCH){
+        par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
+    }
+
     if((int)par("Type") == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
         miss_table = new partition_rule[miss_table_size];
@@ -33,7 +55,7 @@ void Switch::initialize()
 
         // Define the initial partition , Should be deleted when there will be a real partition
         uint64_t last = 0;
-        uint64_t diff = (uint64_t)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation")));
+        uint64_t diff = (uint64_t)(policy_size/(int)(getParentModule()->par("NumOfAggregation")));
         for(int i = 0;i < miss_table_size;i++){
             miss_table[i].low = last;
             miss_table[i].high = last + diff;
@@ -47,7 +69,7 @@ void Switch::initialize()
         miss_table_size = 1;
         miss_table = new partition_rule[miss_table_size];
         miss_table[0].low = 0;
-        miss_table[0].high = POLICYSIZE;
+        miss_table[0].high = policy_size;
         miss_table[0].port = 0;
     }
 
@@ -60,8 +82,8 @@ void Switch::initialize()
     m1->setKind(FLUSH_ELEPHANT_PKT);
     m2->setKind(CHECK_FOR_ELEPHANT_PKT);
 
-    scheduleAt(simTime() + FLUSH_ELEPHANT_TIME,m1);
-    scheduleAt(simTime() + CHECK_FOR_ELEPHANT_TIME,m2);
+    scheduleAt(simTime() + stold(getParentModule()->par("flush_elephant_time").stdstringValue()),m1);
+    scheduleAt(simTime() + stold(getParentModule()->par("check_for_elephant_time").stdstringValue()),m2);
 
 }
 
@@ -85,14 +107,14 @@ void Switch::handleMessage(cMessage *message)
         //end of byte_count
 
         uint64_t dest = msg->getDestination();
-        if(elephant_table.size() == ELEPHANT_TABLE_SIZE){
+        if(elephant_table.size() == stoull(getParentModule()->par("elephant_table_size").stdstringValue())){
             if(elephant_table.count(dest) > 0){//The flow is in the table
                 elephant_table[dest].count++;
                 elephant_table[dest].last_time = simTime();
             }
         }
         else {
-            if(elephant_count % ELEPHANT_SAMPLE_RX == 0){ //Every few packets we will sample a packet in RX
+            if(elephant_count % stoi(getParentModule()->par("elephant_sample_rx").stdstringValue()) == 0){ //Every few packets we will sample a packet in RX
                 elephant_struct new_pkt;
                 //new_pkt.byte_count = 0;
                 new_pkt.count = 0;
@@ -132,7 +154,7 @@ void Switch::handleMessage(cMessage *message)
                        break;
             }
             }
-            sendDelayed(msg,PROCESSING_TIME_ON_AD_DATA_PACKET, "port$o", egressPort); //Model the processing time on a data packet
+            sendDelayed(msg,stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue()), "port$o", egressPort); //Model the processing time on a data packet
             break; // end case
         }
         case INSERTRULE_PULL:
@@ -151,10 +173,10 @@ void Switch::handleMessage(cMessage *message)
             m1 = new InsertionPacket("Insertion delay packet");
             m1->setKind(INSERTION_DELAY_PCK);
             m1->setRule(pck->getRule()); //not necessary
-            scheduleAt(simTime() + INSERTION_DELAY,m1);
+            scheduleAt(simTime() + stold(getParentModule()->par("insertion_delay").stdstringValue()),m1);
 
-            if(cache.size() < CACHE_PERCENTAGE * (int)par("CacheSize")){
-                s = SAMPLE_SIZE;
+            if(cache.size() < stold(getParentModule()->par("cache_percentage").stdstringValue()) * stoull(getParentModule()->par("cache_size").stdstringValue())){
+                s = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
             }
             else{
                 s = 1;
@@ -164,7 +186,7 @@ void Switch::handleMessage(cMessage *message)
             m2 = new InsertionPacket("Eviction delay packet");
             m2->setKind(EVICTION_DELAY_PCK);
             m2->setRule(rule_for_eviction);
-            scheduleAt(simTime() + s*EVICTION_DELAY,m2);
+            scheduleAt(simTime() + s*stold(getParentModule()->par("eviction_delay").stdstringValue()),m2);
             delete pck;
             break; // end case
         }
@@ -189,7 +211,7 @@ void Switch::handleMessage(cMessage *message)
         case FLUSH_ELEPHANT_PKT:
         {
             elephant_table.clear(); //clear the elephant_table
-            scheduleAt(simTime() + FLUSH_ELEPHANT_TIME,message);
+            scheduleAt(simTime() + stold(getParentModule()->par("flush_elephant_time").stdstringValue()),message);
             break; // end case
         }
         case CHECK_FOR_ELEPHANT_PKT:
@@ -209,7 +231,7 @@ void Switch::handleMessage(cMessage *message)
 
                 }
             }
-            scheduleAt(simTime() + CHECK_FOR_ELEPHANT_TIME,message);
+            scheduleAt(simTime() + stold(getParentModule()->par("check_for_elephant_time").stdstringValue()),message);
             break; // end case
         }
         case RULE_REQUEST:
@@ -287,7 +309,9 @@ int Switch::miss_table_search(uint64_t dest){
 }
 
 uint64_t Switch::which_rule_to_evict(int s){
+    int n = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
     uint64_t samples[SAMPLE_SIZE];
+    //uint64_t samples[n];
     uint64_t evicted_rule_key;
     simtime_t min = 1000000;
 
@@ -331,7 +355,7 @@ int Switch::internal_forwarding_port (InsertionPacket *msg){
 
 int Switch::hash(uint64_t dest){
     int num_of_agg = (int)(getParentModule()->par("NumOfAggregation"));
-    return (int)ceil((float)dest/(float)(POLICYSIZE/num_of_agg));
+    return (int)ceil((float)dest/(float)(policy_size/num_of_agg));
     //return (int)uniform(1,num_of_agg + 1);
 }
 

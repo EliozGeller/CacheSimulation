@@ -34,7 +34,8 @@ OBJS = \
     $O/Controller.o \
     $O/Destination.o \
     $O/general_functions.o \
-    $O/Rack.o \
+    $O/Host.o \
+    $O/Hub.o \
     $O/Switch.o \
     $O/messages_m.o
 

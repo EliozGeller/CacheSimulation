@@ -22,6 +22,12 @@ Define_Module(Controller);
 
 void Controller::initialize()
 {
+
+
+
+    //set all parameters from csv file;
+    set_all_parameters();
+    initialization_start_time_for_flows();
     packet_counter = 0;
 
     // Define the initial partition
@@ -66,16 +72,112 @@ void Controller::handleMessage(cMessage *message)
         msg->setKind(HITPACKET);
         send(msg, "port$o", 0);
         break;
-    case DATA_FOR_PARTITION:
+    case DATA_FOR_PARTITION://change
         pkt = check_and_cast<Data_for_partition *>(message);
         partition_calculation(pkt);
         update_miss_forwarding();
-        sendDelayed(pkt, PARTITION_RATE, "port$o", 0);
+        sendDelayed(pkt, PARTITION_RATE, "port$o", 0);//
         break;
 
     }
 
 }
+
+
+void Controller::set_all_parameters(){
+    string s;
+    vector<vector<string>> data_file = read_data_file(PATH_DATA);
+
+
+    s = get_parameter(data_file,"Policy size");
+    getParentModule()->par("policy_size").setStringValue(s);
+
+    s = get_parameter(data_file,"Cache size");
+    getParentModule()->par("cache_size").setStringValue(s);
+
+    s = get_parameter(data_file,"Propagation");
+    getParentModule()->par("propagation_time").setStringValue(s);
+
+    s = get_parameter(data_file,"Processing time on a data packet in switch");
+    getParentModule()->par("processing_time_on_data_packet_in_sw").setStringValue(s);
+
+    s = get_parameter(data_file,"Processing time on a data packet in controller");
+    getParentModule()->par("processing_time_on_data_packet_in_controller").setStringValue(s);
+
+    s = get_parameter(data_file,"Processing time for rule insertion");
+    getParentModule()->par("insertion_delay").setStringValue(s);
+
+    s = get_parameter(data_file,"Processing time for rule eviction");
+    getParentModule()->par("eviction_delay").setStringValue(s);
+
+    s = get_parameter(data_file,"Elephant table size");
+    getParentModule()->par("elephant_table_size").setStringValue(s);
+
+    s = get_parameter(data_file,"Elephant flush table timer");
+    getParentModule()->par("flush_elephant_time").setStringValue(s);
+
+    s = get_parameter(data_file,"Elephant detection timer");
+    getParentModule()->par("check_for_elephant_time").setStringValue(s);
+
+    s = get_parameter(data_file,"Sample rate");
+    getParentModule()->par("elephant_sample_rx").setStringValue(s);
+
+    s = get_parameter(data_file,"Bandwidth threshold");
+    getParentModule()->par("bandwidth_elephant_threshold").setStringValue(s);
+
+    s = get_parameter(data_file,"Timestamp threshold");
+    getParentModule()->par("already_requested_threshold").setStringValue(s);
+
+    s = get_parameter(data_file,"Threshold in aggregation");
+    getParentModule()->par("push_threshold_in_aggregation").setStringValue(s);
+
+    s = get_parameter(data_file,"Threshold in controller switch");
+    getParentModule()->par("push_threshold_in_controller_switch").setStringValue(s);
+
+    s = get_parameter(data_file,"Cache percentage");
+    getParentModule()->par("cache_percentage").setStringValue(s);
+
+    s = get_parameter(data_file,"sample size");
+    getParentModule()->par("eviction_sample_size").setStringValue(s);
+
+    s = get_parameter(data_file,"Inter arrival time between packets");
+    getParentModule()->par("inter_arrival_time_between_packets").setStringValue(s);
+
+    s = get_parameter(data_file,"Inter arrival time between flowlets");
+    getParentModule()->par("inter_arrival_time_between_flowlets").setStringValue(s);
+
+    s = get_parameter(data_file,"Inter arrival time between flows");
+    getParentModule()->par("inter_arrival_time_between_flows").setStringValue(s);
+
+    s = get_parameter(data_file,"Large flow");
+    getParentModule()->par("large_flow").setStringValue(s);
+
+}
+
+void Controller::initialization_start_time_for_flows(){
+    int NumOfToRs = getParentModule()->par("NumOfToRs").intValue();
+    int number_of_hosts =  getParentModule()->par("number_of_hosts").intValue();
+
+
+    string s = "";
+
+    long double flow_appearance,last_flow = 0;
+    long double inter_arrival_time_between_flows = stold(getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
+
+
+    for(int i = 0;i < NumOfToRs;i++){
+        for(int j = 0;j < number_of_hosts;j++){
+            flow_appearance = last_flow + exponential(inter_arrival_time_between_flows);
+            s = s + to_string(flow_appearance) + ",";
+            last_flow = flow_appearance;
+        }
+        last_flow = 0;
+    }
+    getParentModule()->par("start_time_for_flows").setStringValue(s);
+}
+
+
+
 
 void Controller::partition_calculation(Data_for_partition* msg){
 

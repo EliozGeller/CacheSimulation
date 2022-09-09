@@ -36,6 +36,8 @@ private:
    int number_of_flowlet;
    int flowlet_count;
    uint64_t sequence;
+   simtime_t inter_arrival_time_between_packets;
+   simtime_t inter_arrival_time_between_flowlets;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
