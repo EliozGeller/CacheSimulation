@@ -79,3 +79,16 @@ vector<vector<string>> read_data_file(string fname){
     file.close();
     return data_file;
 }
+
+string my_to_string(long double x){
+    stringstream stream;
+    // Set precision level to 20
+    stream.precision(20);
+    stream << fixed;
+
+    // Convert double to string
+    stream<<x;
+    string str  = stream.str();
+    return str;
+
+}

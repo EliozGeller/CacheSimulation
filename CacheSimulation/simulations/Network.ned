@@ -31,7 +31,6 @@ network Network
         @display("i=block/routing");
         int NumOfToRs;
         int NumOfAggregation;
-        int number_of_hosts;
         double linedelay;
         @display("bgb=725,450");
 
@@ -70,9 +69,6 @@ network Network
                 string inter_arrival_time_between_flowlets;
                 string inter_arrival_time_between_flows;
                 string large_flow;
-            
-            //statrt time of the hosts"
-           	 	string start_time_for_flows;
         
         
         //end simulation parameters

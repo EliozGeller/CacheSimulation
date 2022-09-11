@@ -35,12 +35,10 @@ Define_Module(Host);
 void Host::initialize()
 {
 
-
     sequence = 0;
     id =  getParentModule()->getIndex() * (int)getParentModule()->par("number_of_hosts") + getIndex();
     EV << "id in rack "<<  getParentModule()->getIndex() << " in Host "<< getIndex() << " is " << id << endl;
-    //flow_size = draw_flow_size(); //change
-    flow_size = (uint64_t)uniform(0,POLICYSIZE); //change
+    flow_size = stoull(par("flow_size").stdstringValue());
     destination = (uint64_t)uniform(0,POLICYSIZE); //change
 
     inter_arrival_time_between_packets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_packets").stdstringValue());
@@ -61,20 +59,10 @@ void Host::initialize()
     message->setKind(GENERATEPACKET);
 
 
-
-    string start_time_for_flows = getParentModule()->getParentModule()->par("start_time_for_flows").stdstringValue();
-
-    vector<string> row;
-    string  word;
-    stringstream str(start_time_for_flows);
-
-    while(getline(str, word, ','))
-    row.push_back(word);
-
-
-    simtime_t arrival_time = (simtime_t)stold(row[id]);
+    simtime_t arrival_time = (simtime_t)stold(par("flow_appearance").stdstringValue());
     EV << "id = "<< id << endl;
     EV << "arrival_time = "<< arrival_time << endl;
+    EV << "flow_size = "<< flow_size << endl;
     scheduleAt(simTime() + arrival_time,message);
 }
 
@@ -115,22 +103,6 @@ void Host::handleMessage(cMessage *message)
           scheduleAt(simTime() + exponential(arrival_time),genpack);
           break;
           }
-    }
-}
-
-uint64_t Host::draw_flow_size(){
-    /*
-     * Here there is an option to check each row whether it is float or not,
-     *  but right now it is just searching starting from the second row
-     */
-    vector<vector<string>> size_distribution_file = read_data_file(PATH_DISTRIBUTION);
-
-
-    float x = uniform(0,1);
-    for(int i = 1 /*start from the second row*/;i < size_distribution_file.size();i++){ //
-        if(x < stold(size_distribution_file[i][1])){
-            return (uint64_t)stoull(size_distribution_file[i][0]);
-        }
     }
 }
 }; // namespace

@@ -13,14 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package cachesimulation;
+#ifndef __CACHESIMULATION_TCX_H
+#define __CACHESIMULATION_TCX_H
 
+#include <omnetpp.h>
 
-simple Host
+using namespace omnetpp;
+
+namespace cachesimulation {
+
+/**
+ * Implements the Txc simple module. See the NED file for more information.
+ */
+class Txc : public cSimpleModule
 {
-    parameters:
-        string flow_appearance;
-        string flow_size;
-    gates:
-        inout port[];
-}
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+};
+
+}; // namespace
+
+#endif

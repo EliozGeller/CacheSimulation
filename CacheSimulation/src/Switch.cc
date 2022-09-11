@@ -24,23 +24,12 @@ Define_Module(Switch);
 
 void Switch::initialize()
 {
-
-    //
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-
-    EV << stoi(getParentModule()->par("policy_size").stdstringValue()) << endl;
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-
-    //
-
     //real start:
     id = getIndex();
     byte_count = 0;
     policy_size = stoull(getParentModule()->par("policy_size").stdstringValue());
+    bandwidth_elephant_threshold = stoull(getParentModule()->par("bandwidth_elephant_threshold").stdstringValue());
+    already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
     if(par("Type").intValue() == AGGREGATION){
         par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
     }
@@ -98,7 +87,7 @@ void Switch::handleMessage(cMessage *message)
 
 
     //RX:
-    //Elephant Detector
+    //Elephant Detector:
     if((int)par("Type") == TOR && kind_of_packet == DATAPACKET){ // Act only if this is a Data packet in the ToR
         msg = check_and_cast<DataPacket *>(message);
         //byte count:
@@ -107,22 +96,26 @@ void Switch::handleMessage(cMessage *message)
         //end of byte_count
 
         uint64_t dest = msg->getDestination();
-        if(elephant_table.size() == stoull(getParentModule()->par("elephant_table_size").stdstringValue())){
-            if(elephant_table.count(dest) > 0){//The flow is in the table
-                elephant_table[dest].count++;
-                elephant_table[dest].last_time = simTime();
-            }
+
+        if(elephant_table.count(dest) > 0){//The flow is in the table
+            elephant_table[dest].count++;
+            elephant_table[dest].last_time = simTime();
         }
         else {
+            elephant_count++;
             if(elephant_count % stoi(getParentModule()->par("elephant_sample_rx").stdstringValue()) == 0){ //Every few packets we will sample a packet in RX
-                elephant_struct new_pkt;
-                //new_pkt.byte_count = 0;
-                new_pkt.count = 0;
-                new_pkt.first_appearance = simTime();
-                new_pkt.last_time = simTime();
-                elephant_table[dest] = new_pkt;
-            }
+                EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
+                EV << "insert elephant "<<dest<< endl;
+                EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
+               elephant_struct new_pkt;
+               //new_pkt.byte_count = 0;
+               new_pkt.count = 0;
+               new_pkt.first_appearance = simTime();
+               new_pkt.last_time = simTime();
+               elephant_table[dest] = new_pkt;
+           }
         }
+
     }
 
 
@@ -217,9 +210,12 @@ void Switch::handleMessage(cMessage *message)
         case CHECK_FOR_ELEPHANT_PKT:
         {
             for (std::map<uint64_t, elephant_struct>::iterator it=elephant_table.begin(); it!=elephant_table.end(); ++it){
-                if((it->second).count/(simTime() - (it->second).first_appearance) > BANDWIDTH_ELEPHANT_THRESHOLD && (simTime() - (it->second).last_time) > ALREADY_REQUESTED_THRESHOLD && (cache.count(it->first)) == 0){
+                if((it->second).count/(simTime() - (it->second).first_appearance) > bandwidth_elephant_threshold && /*(simTime() - (it->second).last_time) > already_requested_threshold &&*/ (cache.count(it->first)) == 0){
                     //If the bandwidth of this flow is greater than a certain threshold and also that it has not been requested recently and also is not in the cache
                     //send request pkt:
+                    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
+                    EV << "elephant "<<it->second.count<< endl;
+                    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
                     pck = new InsertionPacket("Request for a rule");
                     pck->setKind(RULE_REQUEST);
                     pck->setRule(it->first);
@@ -309,9 +305,7 @@ int Switch::miss_table_search(uint64_t dest){
 }
 
 uint64_t Switch::which_rule_to_evict(int s){
-    int n = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
-    uint64_t samples[SAMPLE_SIZE];
-    //uint64_t samples[n];
+    uint64_t samples[100]; //change
     uint64_t evicted_rule_key;
     simtime_t min = 1000000;
 

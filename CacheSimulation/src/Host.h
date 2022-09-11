@@ -41,7 +41,6 @@ private:
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    virtual uint64_t draw_flow_size();
 };
 
 }; // namespace

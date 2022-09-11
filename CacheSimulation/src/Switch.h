@@ -42,6 +42,8 @@ class Switch : public cSimpleModule
     int miss_table_size;
     unsigned long int elephant_count; //Counter for sampling packets in RX
     unsigned long long int byte_count;
+    unsigned long long int bandwidth_elephant_threshold;
+    simtime_t already_requested_threshold;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

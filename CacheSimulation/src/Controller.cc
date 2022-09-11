@@ -23,8 +23,6 @@ Define_Module(Controller);
 void Controller::initialize()
 {
 
-
-
     //set all parameters from csv file;
     set_all_parameters();
     initialization_start_time_for_flows();
@@ -79,8 +77,17 @@ void Controller::handleMessage(cMessage *message)
         sendDelayed(pkt, PARTITION_RATE, "port$o", 0);//
         break;
 
+    case RULE_REQUEST:
+    {
+        conpacket = check_and_cast<InsertionPacket *>(message);
+        conpacket->setKind(INSERTRULE_PULL);
+        conpacket->setName("Insert rule Packet");
+        //The rule and the switch destination are already sets
+        send(conpacket, "port$o", 0);
+        break;
     }
 
+    }
 }
 
 
@@ -156,25 +163,45 @@ void Controller::set_all_parameters(){
 
 void Controller::initialization_start_time_for_flows(){
     int NumOfToRs = getParentModule()->par("NumOfToRs").intValue();
-    int number_of_hosts =  getParentModule()->par("number_of_hosts").intValue();
+    int number_of_hosts =  getParentModule()->getSubmodule("rack",0)->par("number_of_hosts").intValue();
 
-
-    string s = "";
 
     long double flow_appearance,last_flow = 0;
     long double inter_arrival_time_between_flows = stold(getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
 
+    string s;
 
     for(int i = 0;i < NumOfToRs;i++){
         for(int j = 0;j < number_of_hosts;j++){
             flow_appearance = last_flow + exponential(inter_arrival_time_between_flows);
-            s = s + to_string(flow_appearance) + ",";
+            s =  my_to_string(flow_appearance);
+            getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_appearance").setStringValue(s); //set flow_appearance in host j in rack i
             last_flow = flow_appearance;
+
+            s = to_string(draw_flow_size()); //change
+            getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_size").setStringValue(s); //set flow_size in host j in rack i
         }
         last_flow = 0;
     }
-    getParentModule()->par("start_time_for_flows").setStringValue(s);
 }
+
+uint64_t Controller::draw_flow_size(){
+    /*
+     * Here there is an option to check each row whether it is float or not,
+     *  but right now it is just searching starting from the second row
+     */
+    vector<vector<string>> size_distribution_file = read_data_file(PATH_DISTRIBUTION);
+
+
+    float x = uniform(0,1);
+    for(int i = 1 /*start from the second row*/;i < size_distribution_file.size();i++){ //
+        if(x < stold(size_distribution_file[i][1])){
+            return (uint64_t)stoull(size_distribution_file[i][0]);
+        }
+    }
+}
+
+
 
 
 

@@ -118,4 +118,5 @@ std::string get_flow(const std::string& str);
 long long int get_sequence(const std::string& str);
 string get_parameter(vector<vector<string>> content,string key);
 vector<vector<string>> read_data_file(string fname);
+string my_to_string(long double x); // convert long double to string with precision level of 20 digits
 
