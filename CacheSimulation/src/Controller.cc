@@ -32,8 +32,10 @@ void Controller::initialize()
     miss_table_size = getParentModule()->par("NumOfAggregation");
     partition = new partition_rule[miss_table_size];
 
+    uint64_t policy_size =  stoull(getParentModule()->par("policy_size").stdstringValue());
+
     uint64_t last = 0;
-    uint64_t diff = (uint64_t)(POLICYSIZE/(int)(getParentModule()->par("NumOfAggregation")));
+    uint64_t diff = (uint64_t)(policy_size/(int)(getParentModule()->par("NumOfAggregation")));
     for(int i = 0;i < miss_table_size;i++){
         partition[i].low = last;
         partition[i].high = last + diff;
@@ -68,13 +70,17 @@ void Controller::handleMessage(cMessage *message)
         send(conpacket, "port$o", 0);
         msg->setExternal_destination(1);
         msg->setKind(HITPACKET);
-        send(msg, "port$o", 0);
+        msg->setName("Hit packet");
+        send(msg, "port$o", 0);//change
         break;
     case DATA_FOR_PARTITION://change
         pkt = check_and_cast<Data_for_partition *>(message);
+        delete pkt;
+        /*
         partition_calculation(pkt);
         update_miss_forwarding();
         sendDelayed(pkt, PARTITION_RATE, "port$o", 0);//
+        */
         break;
 
     case RULE_REQUEST:
@@ -178,28 +184,14 @@ void Controller::initialization_start_time_for_flows(){
             getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_appearance").setStringValue(s); //set flow_appearance in host j in rack i
             last_flow = flow_appearance;
 
-            s = to_string(draw_flow_size()); //change
-            getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_size").setStringValue(s); //set flow_size in host j in rack i
+            //s = to_string(draw_flow_size()); //change
+            //getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_size").setStringValue(s); //set flow_size in host j in rack i
         }
         last_flow = 0;
     }
 }
 
-uint64_t Controller::draw_flow_size(){
-    /*
-     * Here there is an option to check each row whether it is float or not,
-     *  but right now it is just searching starting from the second row
-     */
-    vector<vector<string>> size_distribution_file = read_data_file(PATH_DISTRIBUTION);
 
-
-    float x = uniform(0,1);
-    for(int i = 1 /*start from the second row*/;i < size_distribution_file.size();i++){ //
-        if(x < stold(size_distribution_file[i][1])){
-            return (uint64_t)stoull(size_distribution_file[i][0]);
-        }
-    }
-}
 
 
 

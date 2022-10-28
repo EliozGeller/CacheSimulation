@@ -26,7 +26,26 @@ void Switch::initialize()
 {
     //real start:
     id = getIndex();
+
+    //start of par:
+    type = (int)par("Type");
+    elephant_sample_rx = stoi(getParentModule()->par("elephant_sample_rx").stdstringValue());
+    processing_time_on_data_packet_in_sw = stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue());
+    insertion_delay = stold(getParentModule()->par("insertion_delay").stdstringValue());
+    cache_percentage = stold(getParentModule()->par("cache_percentage").stdstringValue());
+    cache_size = stoull(getParentModule()->par("cache_size").stdstringValue());
+    eviction_sample_size = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
+    eviction_delay = stold(getParentModule()->par("eviction_delay").stdstringValue());
+    flush_elephant_time = stold(getParentModule()->par("flush_elephant_time").stdstringValue());
+    check_for_elephant_time = stold(getParentModule()->par("check_for_elephant_time").stdstringValue());
+    num_of_agg = (int)(getParentModule()->par("NumOfAggregation"));
+    //end of par
     byte_count = 0;
+    for(int i = 0; i < 10;i++){
+        byte_count_per_link[i] = 0;
+        before_hit_byte_count[i] = 0;
+        after_hit_byte_count[i] = 0;
+    }
     policy_size = stoull(getParentModule()->par("policy_size").stdstringValue());
     bandwidth_elephant_threshold = stoull(getParentModule()->par("bandwidth_elephant_threshold").stdstringValue());
     already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
@@ -36,8 +55,8 @@ void Switch::initialize()
     if(par("Type").intValue() == CONTROLLERSWITCH){
         par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
     }
-
-    if((int)par("Type") == TOR){
+    threshold = (int)par("threshold");
+    if(type == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
         miss_table = new partition_rule[miss_table_size];
 
@@ -64,6 +83,8 @@ void Switch::initialize()
 
 
     //initialize Elephant process:
+
+
     elephant_count = 0;
     cMessage* m1 = new cMessage("Flush elephant timer");
     cMessage* m2 = new cMessage("Check for elephant timer");
@@ -74,26 +95,73 @@ void Switch::initialize()
     scheduleAt(simTime() + stold(getParentModule()->par("flush_elephant_time").stdstringValue()),m1);
     scheduleAt(simTime() + stold(getParentModule()->par("check_for_elephant_time").stdstringValue()),m2);
 
+
+
+    /*
+    //miss count:
+    cMessage* m3 = new cMessage("miss count timer");
+    scheduleAt(simTime() + 0.001,m3);
+    misscount.setName("missCount");
+    //end miss count
+    */
 }
 
 void Switch::handleMessage(cMessage *message)
 {
+
     int egressPort;
     int kind_of_packet = message->getKind();
     int s;
     DataPacket *msg;
     InsertionPacket *pck,*m1,*m2;
 
+/*
+    /////start test:
+    msg = check_and_cast<DataPacket *>(message);
+    sendDelayed(msg,0.0000005, "port$o",  hit_forward(msg->getDestination())); //Model the processing time on a data packet
+    //sendDelayed(msg,stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue()), "port$o",  hit_forward(msg->getDestination())); //Model the processing time on a data packet
+    //important!!!!!!!!!!!!!!!!!!!!!! doen't work
+    return;
 
+    delete message;  /////////////////work
+    return;
+    //end test
+
+*/
+    /*
+    //miss count:
+    if(!strcmp(message->getName(),"miss count timer")){
+        misscount.record(((float)miss_packets)/(float)(miss_packets + hit_packets));
+        EV << " ggrtgrg = " << ((float)miss_packets)/(float)(miss_packets + hit_packets) << endl;
+        EV <<"miss_packets = " << miss_packets << ",hit_packets = " << hit_packets <<endl;
+        hit_packets = 0;
+        miss_packets = 0;
+        scheduleAt(simTime() + 0.001,message);
+    }
+    //end miss count
+
+
+    //byte count:
+    if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
+        msg = check_and_cast<DataPacket *>(message);
+           byte_count += msg->getByteLength();
+           int pport =  msg->getArrivalGate()->getIndex();
+           byte_count_per_link[pport] += msg->getByteLength();
+           if(msg->getExternal_destination() != 1){
+               before_hit_byte_count[pport] += msg->getByteLength();
+           }
+           else{
+               after_hit_byte_count[pport] += msg->getByteLength();
+           }
+           //end of byte_count
+    }
+    */
 
     //RX:
     //Elephant Detector:
-    if((int)par("Type") == TOR && kind_of_packet == DATAPACKET){ // Act only if this is a Data packet in the ToR
+    if(type == TOR && kind_of_packet == DATAPACKET){ // Act only if this is a Data packet in the ToR
         msg = check_and_cast<DataPacket *>(message);
-        //byte count:
-        byte_count += msg->getByteLength();
 
-        //end of byte_count
 
         uint64_t dest = msg->getDestination();
 
@@ -103,10 +171,7 @@ void Switch::handleMessage(cMessage *message)
         }
         else {
             elephant_count++;
-            if(elephant_count % stoi(getParentModule()->par("elephant_sample_rx").stdstringValue()) == 0){ //Every few packets we will sample a packet in RX
-                EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
-                EV << "insert elephant "<<dest<< endl;
-                EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
+            if(elephant_count % elephant_sample_rx == 0){ //Every few packets we will sample a packet in RX
                elephant_struct new_pkt;
                //new_pkt.byte_count = 0;
                new_pkt.count = 0;
@@ -123,6 +188,7 @@ void Switch::handleMessage(cMessage *message)
 
 
     //TX:
+    EV << "kind = "<< kind_of_packet<<endl;
     switch(kind_of_packet){
         case DATAPACKET:
         case HITPACKET:
@@ -134,26 +200,28 @@ void Switch::handleMessage(cMessage *message)
             else {
                switch(cache_search(msg->getDestination())){
                    case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
-                       if((int)par("Type") != TOR)fc_send(msg);
+                       if(type != TOR)fc_send(msg);
                        //break; //in purpose
                    case FOUND:
                        egressPort = hit_forward(msg->getDestination());
                        msg->setExternal_destination(1);
                        msg->setKind(HITPACKET);
+                       hit_packets++;
                        break;
                    case NOTFOUND:
                        egressPort = miss_table_search(msg->getDestination());
                        msg->setMiss_hop(msg->getMiss_hop() + 1);
+                       miss_packets++;
                        break;
             }
             }
-            sendDelayed(msg,stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue()), "port$o", egressPort); //Model the processing time on a data packet
+            sendDelayed(msg,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
             break; // end case
         }
         case INSERTRULE_PULL:
         {
             pck = check_and_cast<InsertionPacket *>(message);
-            if(!(pck->getSwitch_type() == (int)par("Type") &&  pck->getDestination() == id)){ //If this switch is not the destination
+            if(!(pck->getSwitch_type() == type &&  pck->getDestination() == id)){ //If this switch is not the destination
                 egressPort = internal_forwarding_port(pck);
                 send(pck, "port$o", egressPort);
                 break;
@@ -166,10 +234,10 @@ void Switch::handleMessage(cMessage *message)
             m1 = new InsertionPacket("Insertion delay packet");
             m1->setKind(INSERTION_DELAY_PCK);
             m1->setRule(pck->getRule()); //not necessary
-            scheduleAt(simTime() + stold(getParentModule()->par("insertion_delay").stdstringValue()),m1);
+            scheduleAt(simTime() + insertion_delay,m1);
 
-            if(cache.size() < stold(getParentModule()->par("cache_percentage").stdstringValue()) * stoull(getParentModule()->par("cache_size").stdstringValue())){
-                s = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
+            if(cache.size() < cache_percentage * cache_size){
+                s = eviction_sample_size ;
             }
             else{
                 s = 1;
@@ -179,7 +247,7 @@ void Switch::handleMessage(cMessage *message)
             m2 = new InsertionPacket("Eviction delay packet");
             m2->setKind(EVICTION_DELAY_PCK);
             m2->setRule(rule_for_eviction);
-            scheduleAt(simTime() + s*stold(getParentModule()->par("eviction_delay").stdstringValue()),m2);
+            scheduleAt(simTime() + s*eviction_delay,m2);
             delete pck;
             break; // end case
         }
@@ -204,7 +272,7 @@ void Switch::handleMessage(cMessage *message)
         case FLUSH_ELEPHANT_PKT:
         {
             elephant_table.clear(); //clear the elephant_table
-            scheduleAt(simTime() + stold(getParentModule()->par("flush_elephant_time").stdstringValue()),message);
+            scheduleAt(simTime() + flush_elephant_time,message);
             break; // end case
         }
         case CHECK_FOR_ELEPHANT_PKT:
@@ -213,21 +281,18 @@ void Switch::handleMessage(cMessage *message)
                 if((it->second).count/(simTime() - (it->second).first_appearance) > bandwidth_elephant_threshold && /*(simTime() - (it->second).last_time) > already_requested_threshold &&*/ (cache.count(it->first)) == 0){
                     //If the bandwidth of this flow is greater than a certain threshold and also that it has not been requested recently and also is not in the cache
                     //send request pkt:
-                    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
-                    EV << "elephant "<<it->second.count<< endl;
-                    EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<< endl;
                     pck = new InsertionPacket("Request for a rule");
                     pck->setKind(RULE_REQUEST);
                     pck->setRule(it->first);
                     //pkt->setType(PULL); delete
-                    pck->setSwitch_type((int)par("Type"));
+                    pck->setSwitch_type(type);
                     pck->setDestination(id);
                     egressPort = miss_table_search(it->first);
                     send(pck, "port$o", egressPort);
 
                 }
             }
-            scheduleAt(simTime() + stold(getParentModule()->par("check_for_elephant_time").stdstringValue()),message);
+            scheduleAt(simTime() + check_for_elephant_time,message);
             break; // end case
         }
         case RULE_REQUEST:
@@ -270,7 +335,7 @@ int Switch::cache_search(uint64_t rule){
         it->second.count = it->second.count + 1;
         it->second.last_time = simTime();
 
-        if( it->second.count > (int)par("threshold")){
+        if( it->second.count > threshold){
             return THRESHOLDCROSS;
         }
         else {
@@ -281,7 +346,7 @@ int Switch::cache_search(uint64_t rule){
 
 int Switch::hit_forward(uint64_t dest){
     int egressPort;
-    switch((int)par("Type")){
+    switch(type){
             case AGGREGATION:
                 egressPort = 1;
               break;
@@ -330,8 +395,7 @@ int Switch::internal_forwarding_port (InsertionPacket *msg){
     int destination_type  = msg->getSwitch_type();
     int destination = msg->getDestination();
     int egress_port;
-    int num_of_agg = (int)(getParentModule()->par("NumOfAggregation"));
-    switch((int)par("Type")){
+    switch(type){
         case CONTROLLERSWITCH:
             if(destination_type == AGGREGATION){
                 egress_port = destination + 1; // Because the id starts from 0 and the controller switch is connected to the aggregation on ports 1, 2,...
@@ -348,14 +412,30 @@ int Switch::internal_forwarding_port (InsertionPacket *msg){
 }
 
 int Switch::hash(uint64_t dest){
-    int num_of_agg = (int)(getParentModule()->par("NumOfAggregation"));
+    EV<< "dest = "<< dest<<endl;
     return (int)ceil((float)dest/(float)(policy_size/num_of_agg));
     //return (int)uniform(1,num_of_agg + 1);
 }
 
+
+
 void Switch::finish(){
     delete[] miss_table;
-    if((int)par("Type") == TOR)EV << "Bandwidth in ToR "<< id << " is " << abs(8*byte_count/simTime()) << " bps" <<  endl;
+    //if(type == TOR)EV << "Bandwidth in ToR "<< id << " is " << abs(8*byte_count/simTime()) << " bps" <<  endl;
+    string s;
+    if(type == TOR)s = "ToR";
+    if(type == AGGREGATION)s = "AGGREGATION";
+    if(type == CONTROLLERSWITCH)s = "CONTROLLERSWITCH";
+
+    EV<< s << " " << id << ":" << endl;
+    //EV << "Bandwidth: " << abs(8*byte_count/simTime()) << " bps" <<  endl;
+    for(int i = 0;i < 10;i++){
+        if(byte_count_per_link[i])EV << "Bandwidth on link " << i << " is  " << abs(8*byte_count_per_link[i]/simTime()) << " bps" <<  endl;
+        if(before_hit_byte_count[i])EV << "Bandwidth of packets before hit on link " << i << " is  " << abs(8*before_hit_byte_count[i]/simTime()) << " bps" <<  endl;
+        if(after_hit_byte_count[i])EV << "Bandwidth of packets after hit on link " << i << " is  " << abs(8*after_hit_byte_count[i]/simTime()) << " bps" <<  endl;
+    }
+    EV  <<  endl;
+    EV  <<  endl;
 }
 
 

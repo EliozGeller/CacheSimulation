@@ -36,41 +36,45 @@ network Network
 
         //int Do_generate_traffic;
         //int generate_online_traffic;
-        
-        
-        
+
+
+
         //simulation parameters:
-        	//Hardware:
-                string policy_size;
-                string cache_size;
-            
-            //Delays:
-                string propagation_time;
-                string processing_time_on_data_packet_in_sw;
-                string processing_time_on_data_packet_in_controller;
-                string insertion_delay;
-                string eviction_delay;
-            //Elephant Detector:
-                string elephant_table_size;
-                string flush_elephant_time;
-                string check_for_elephant_time;
-                string elephant_sample_rx;
-                string bandwidth_elephant_threshold;
-                string already_requested_threshold;
-            
-            //Push insertion:
-                string push_threshold_in_aggregation;
-                string push_threshold_in_controller_switch;
-            //Eviction:
-                string cache_percentage;
-                string eviction_sample_size;
-            //Traffic:
-                string inter_arrival_time_between_packets;
-                string inter_arrival_time_between_flowlets;
-                string inter_arrival_time_between_flows;
-                string large_flow;
+        //Hardware:
+        string policy_size;
+        string cache_size;
+
+        //Delays:
+        string propagation_time;
+        string processing_time_on_data_packet_in_sw;
+        string processing_time_on_data_packet_in_controller;
+        string insertion_delay;
+        string eviction_delay;
+        //Elephant Detector:
+        string elephant_table_size;
+        string flush_elephant_time;
+        string check_for_elephant_time;
+        string elephant_sample_rx;
+        string bandwidth_elephant_threshold;
+        string already_requested_threshold;
+
+        //Push insertion:
+        string push_threshold_in_aggregation;
+        string push_threshold_in_controller_switch;
+        //Eviction:
+        string cache_percentage;
+        string eviction_sample_size;
+        //Traffic:
+        string inter_arrival_time_between_packets;
+        string inter_arrival_time_between_flowlets;
+        string inter_arrival_time_between_flows;
+        string large_flow;
         
-        
+        //creation of new flow:
+        string last_flow_id;
+        string last_flow_appearance;
+
+
         //end simulation parameters
     types:
         channel C extends ned.DelayChannel

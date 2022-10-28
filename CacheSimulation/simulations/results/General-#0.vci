@@ -1,0 +1,75 @@
+file 3287 1666874461                                            
+version 2
+run General-0-20221027-15:32:27-12964
+attr configname General
+attr datetime 20221027-15:32:27
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsf ""
+attr measurement ""
+attr network Network
+attr processid 12964
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+param Network.NumOfToRs 5
+param Network.NumOfAggregation 3
+param Network.rack[*].number_of_hosts 1000
+param Network.linedelay 0.2
+param Network.tor[*].CacheSize 1000
+param Network.agg[*].CacheSize 1000
+param Network.controllerswitch.CacheSize 1000
+param Network.tor[*].threshold 2
+param Network.agg[*].threshold 2
+param Network.controllerswitch.threshold 1
+param Network.tor[*].Type 1001
+param Network.agg[*].Type 1002
+param Network.controllerswitch.Type 1003
+param Network.rack[*].host[*].flow_appearance "\"\""
+param Network.rack[*].host[*].flow_size "\"\""
+param Network.policy_size "\"\""
+param Network.cache_size "\"\""
+param Network.propagation_time "\"\""
+param Network.processing_time_on_data_packet_in_sw "\"\""
+param Network.processing_time_on_data_packet_in_controller "\"\""
+param Network.insertion_delay "\"\""
+param Network.eviction_delay "\"\""
+param Network.elephant_table_size "\"\""
+param Network.flush_elephant_time "\"\""
+param Network.check_for_elephant_time "\"\""
+param Network.elephant_sample_rx "\"\""
+param Network.bandwidth_elephant_threshold "\"\""
+param Network.already_requested_threshold "\"\""
+param Network.push_threshold_in_aggregation "\"\""
+param Network.push_threshold_in_controller_switch "\"\""
+param Network.cache_percentage "\"\""
+param Network.eviction_sample_size "\"\""
+param Network.inter_arrival_time_between_packets "\"\""
+param Network.inter_arrival_time_between_flowlets "\"\""
+param Network.inter_arrival_time_between_flows "\"\""
+param Network.large_flow "\"\""
+param Network.last_flow_id "\"0\""
+param Network.last_flow_appearance "\"0\""
+
+vector 0 Network.tor[0] missCount ETV
+vector 1 Network.tor[1] missCount ETV
+vector 2 Network.tor[2] missCount ETV
+vector 3 Network.tor[3] missCount ETV
+vector 4 Network.tor[4] missCount ETV
+vector 5 Network.agg[0] missCount ETV
+vector 6 Network.agg[1] missCount ETV
+vector 7 Network.agg[2] missCount ETV
+vector 8 Network.controllerswitch missCount ETV
+0	2361 103 2126866 19320771 0.001 0.003 3 0.33768001198769 0.36844825744629 1.0677230656147 0.38053270553619
+1	2464 103 2126867 19320772 0.001 0.003 3 0.33969050645828 0.38353961706161 1.0977409482002 0.40275063583639
+2	2567 103 2126868 19320773 0.001 0.003 3 0.35245469212532 0.37218141555786 1.0944020152092 0.39947014245635
+3	2670 102 2126869 19320774 0.001 0.003 3 0.33125665783882 0.36662715673447 1.0633655190468 0.3777233217226
+4	2772 103 2126870 19320775 0.001 0.003 3 0.34202980995178 0.37178102135658 1.0844646692276 0.39258978630085
+5	2875 102 2126871 19320776 0.001 0.003 3 0.49520075321198 0.6573897600174 1.689380466938 0.96552853695997
+6	2977 103 2126872 19320777 0.001 0.003 3 0.49425315856934 0.64642089605331 1.6691216826439 0.94140305517141
+7	3080 103 2126873 19320778 0.001 0.003 3 0.49743896722794 0.62495702505112 1.6273642778397 0.89300977869956
+8	3183 102 2126874 19320779 0.001 0.003 3 0.4923829138279 0.59500503540039 1.6113874614239 0.87104741476268
+

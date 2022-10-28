@@ -41,7 +41,7 @@ class Controller : public cSimpleModule
     virtual void update_miss_forwarding();
     virtual void set_all_parameters();
     virtual void initialization_start_time_for_flows();
-    virtual uint64_t draw_flow_size();
+    //virtual uint64_t draw_flow_size();
 };
 
 }; // namespace

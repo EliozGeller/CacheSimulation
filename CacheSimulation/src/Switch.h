@@ -42,8 +42,29 @@ class Switch : public cSimpleModule
     int miss_table_size;
     unsigned long int elephant_count; //Counter for sampling packets in RX
     unsigned long long int byte_count;
+    unsigned long long int byte_count_per_link[10] = {0};
+    unsigned long long int before_hit_byte_count[10] = {0};
+    unsigned long long int after_hit_byte_count[10] = {0};
+    unsigned long long int hit_packets = 0;
+    unsigned long long int miss_packets = 0;
+    cOutVector misscount;
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
+
+    //
+    int type;
+    int elephant_sample_rx;
+    long double processing_time_on_data_packet_in_sw;
+    long double insertion_delay;
+    long double cache_percentage;
+    unsigned long long cache_size;
+    int eviction_sample_size;
+    long double eviction_delay;
+    long double flush_elephant_time;
+    long double check_for_elephant_time;
+    int threshold;
+    int num_of_agg;
+    //
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

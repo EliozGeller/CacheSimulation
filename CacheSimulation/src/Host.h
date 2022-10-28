@@ -38,9 +38,13 @@ private:
    uint64_t sequence;
    simtime_t inter_arrival_time_between_packets;
    simtime_t inter_arrival_time_between_flowlets;
+   cMessage *genpack;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void finish();
+    virtual void start_flow(simtime_t arrival_time,int flow_id);
+    virtual uint64_t draw_flow_size();
 };
 
 }; // namespace

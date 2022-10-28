@@ -39,12 +39,13 @@ void Destination::handleMessage(cMessage *message)
     EV <<" id = " <<msg->getId() << endl;
 
     //statistics for miss count
-    miss_count.collect(msg->getMiss_hop());
+    //miss_count.collect(msg->getMiss_hop());
 
     //statistics for out of order
-    out_of_order_statistics(msg);
+    //out_of_order_statistics(msg);
 
-    delete msg;
+    //delete msg;
+    cancelAndDelete(msg);
 
 }
 
@@ -54,6 +55,7 @@ void Destination::finish()
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     EV << "Miss count in the Destination, mean:   " << miss_count.getMean() << endl;
     EV << "Total arrived packets in the Destination:   " << packet_counter << endl;
+    EV << "simtime =    " << simTime() << endl;
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     miss_count.recordAs("miss count");
