@@ -18,6 +18,7 @@
 
 #include <omnetpp.h>
 #include "messages_m.h"
+#include "Definitions.h"
 
 using namespace omnetpp;
 
@@ -29,9 +30,11 @@ namespace cachesimulation {
 class Hub : public cSimpleModule
 {
 private:
+    cQueue msg_queue;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void my_send(cMessage *msg);
 };
 
 }; // namespace
@@ -50,8 +53,40 @@ void Hub::initialize()
 
 }
 
-void Hub::handleMessage(cMessage *message)
+void Hub::handleMessage(cMessage *msg)
 {
-    send(message, "port$o", 0);
+    //send(message, "port$o", 0);
+
+
+    if(msg->getKind() != HUB_QUEUE_MSG){// packet from host
+        my_send(msg);
+    }
+    else {//schedule packet from queue
+        if(msg_queue.isEmpty())return;
+        cMessage *pkt = (cMessage *)msg_queue.pop();
+        my_send(pkt);
+        if(msg)delete msg;
+        return;
+    }
+}
+
+void Hub::my_send(cMessage *msg){
+
+    cChannel *txChannel = gate("port$o",0)->getTransmissionChannel();
+    simtime_t txFinishTime = txChannel->getTransmissionFinishTime();
+    if (txFinishTime <= simTime())
+    {
+    // channel free; send out packet immediately
+       send(msg, "port$o",0);
+    }
+    else
+    {
+    // store packet and schedule timer; when the timer expires,
+    // the packet should be removed from the queue and sent out
+       msg_queue.insert(msg);
+       cMessage *q_msg = new cMessage("Queue_msg");
+       q_msg->setKind(HUB_QUEUE_MSG);//Kind of Queue message
+       scheduleAt(txFinishTime, q_msg);
+    }
 }
 }; // namespace

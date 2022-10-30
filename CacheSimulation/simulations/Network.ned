@@ -77,9 +77,15 @@ network Network
 
         //end simulation parameters
     types:
-        channel C extends ned.DelayChannel
+        channel delay_ch extends ned.DelayChannel
         {
             delay = 0.1 us; //micros
+        }
+        
+        channel rate_ch extends ned.DatarateChannel
+        {
+            datarate = 1.6 Tbps;
+            delay = 100us;
         }
     submodules:
         controller: Controller {
@@ -102,16 +108,16 @@ network Network
         }
     connections:
         for i=0..NumOfToRs-1 {
-            rack[i].port++ <--> C <--> tor[i].port++;
+            rack[i].port++ <--> rate_ch <--> tor[i].port++;
         }
-        controllerswitch.port++ <--> C <--> controller.port++;
+        controllerswitch.port++ <--> delay_ch <--> controller.port++;
         for i=0..NumOfAggregation-1 {
-            agg[i].port++ <--> C <--> controllerswitch.port++;
+            agg[i].port++ <--> delay_ch <--> controllerswitch.port++;
         }
         for i=0..NumOfAggregation-1 {
-            agg[i].port++ <--> C <--> dest.port++;
+            agg[i].port++ <--> delay_ch <--> dest.port++;
         }
         for i=0..NumOfToRs-1, for j=0..NumOfAggregation-1 {
-            tor[i].port++ <--> C <--> agg[j].port++;
+            tor[i].port++ <--> delay_ch <--> agg[j].port++;
         }
 }
