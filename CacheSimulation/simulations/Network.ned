@@ -108,7 +108,7 @@ network Network
         }
     connections:
         for i=0..NumOfToRs-1 {
-            rack[i].port++ <--> rate_ch <--> tor[i].port++;
+            rack[i].port++ <--> rate_ch <--> tor[i].port++;//rate_ch
         }
         controllerswitch.port++ <--> delay_ch <--> controller.port++;
         for i=0..NumOfAggregation-1 {

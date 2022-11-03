@@ -128,7 +128,7 @@ void Switch::handleMessage(cMessage *message)
     //end test
 
 */
-    /*
+
     //miss count:
     if(!strcmp(message->getName(),"miss count timer")){
         misscount.record(((float)miss_packets)/(float)(miss_packets + hit_packets));
@@ -155,7 +155,7 @@ void Switch::handleMessage(cMessage *message)
            }
            //end of byte_count
     }
-    */
+
 
     //RX:
     //Elephant Detector:
