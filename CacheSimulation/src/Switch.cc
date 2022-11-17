@@ -24,6 +24,14 @@ Define_Module(Switch);
 
 void Switch::initialize()
 {
+
+    //flow_count:
+    flow_count_hist.setName("flow count");
+    cMessage *mmmm = new cMessage("flow_count");
+    mmmm->setKind(FLOW_COUNT_M);
+    scheduleAt(simTime() + INTERVAL,mmmm);
+
+
     //real start:
     id = getIndex();
 
@@ -114,6 +122,23 @@ void Switch::handleMessage(cMessage *message)
     int s;
     DataPacket *msg;
     InsertionPacket *pck,*m1,*m2;
+
+
+
+    //flow_count:
+    if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
+        DataPacket *p = check_and_cast<DataPacket *>(message);
+        flow_count.insert({get_flow(p->getId()),1});
+    }
+    if(message->getKind() == FLOW_COUNT_M){
+        flow_count_hist.collect(flow_count.size());
+        EV << "flow_count: "<< flow_count.size() << endl;
+        flow_count.clear();
+        scheduleAt(simTime() + INTERVAL,message);
+        return;
+    }
+    //end flow count
+
 
 /*
     /////start test:
@@ -428,7 +453,8 @@ void Switch::finish(){
     if(type == CONTROLLERSWITCH)s = "CONTROLLERSWITCH";
 
     EV<< s << " " << id << ":" << endl;
-    //EV << "Bandwidth: " << abs(8*byte_count/simTime()) << " bps" <<  endl;
+    EV << "Bandwidth: " << (long double)(byte_count*8)/simTime().dbl() << " bps" <<  endl;
+    recordScalar("Bandwidth: ", (long double)(byte_count*8)/simTime().dbl());
     for(int i = 0;i < 10;i++){
         if(byte_count_per_link[i])EV << "Bandwidth on link " << i << " is  " << abs(8*byte_count_per_link[i]/simTime()) << " bps" <<  endl;
         if(before_hit_byte_count[i])EV << "Bandwidth of packets before hit on link " << i << " is  " << abs(8*before_hit_byte_count[i]/simTime()) << " bps" <<  endl;
@@ -436,6 +462,8 @@ void Switch::finish(){
     }
     EV  <<  endl;
     EV  <<  endl;
+
+    flow_count_hist.recordAs("flow count");
 }
 
 

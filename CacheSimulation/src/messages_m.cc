@@ -186,6 +186,7 @@ DataPacket::DataPacket(const char *name, short kind) : ::omnetpp::cPacket(name,k
     this->external_destination = 0;
     this->miss_hop = 0;
     this->request = 0;
+    this->flow_size = 0;
 }
 
 DataPacket::DataPacket(const DataPacket& other) : ::omnetpp::cPacket(other)
@@ -212,6 +213,7 @@ void DataPacket::copy(const DataPacket& other)
     this->miss_hop = other.miss_hop;
     this->id = other.id;
     this->request = other.request;
+    this->flow_size = other.flow_size;
 }
 
 void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -222,6 +224,7 @@ void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->miss_hop);
     doParsimPacking(b,this->id);
     doParsimPacking(b,this->request);
+    doParsimPacking(b,this->flow_size);
 }
 
 void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -232,6 +235,7 @@ void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->miss_hop);
     doParsimUnpacking(b,this->id);
     doParsimUnpacking(b,this->request);
+    doParsimUnpacking(b,this->flow_size);
 }
 
 uint64_t DataPacket::getDestination() const
@@ -282,6 +286,16 @@ int DataPacket::getRequest() const
 void DataPacket::setRequest(int request)
 {
     this->request = request;
+}
+
+uint64_t DataPacket::getFlow_size() const
+{
+    return this->flow_size;
+}
+
+void DataPacket::setFlow_size(uint64_t flow_size)
+{
+    this->flow_size = flow_size;
 }
 
 class DataPacketDescriptor : public omnetpp::cClassDescriptor
@@ -349,7 +363,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 5+basedesc->getFieldCount() : 5;
+    return basedesc ? 6+basedesc->getFieldCount() : 6;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -366,8 +380,9 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<6) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -384,8 +399,9 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "miss_hop",
         "id",
         "request",
+        "flow_size",
     };
-    return (field>=0 && field<5) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<6) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -397,6 +413,7 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='m' && strcmp(fieldName, "miss_hop")==0) return base+2;
     if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+3;
     if (fieldName[0]=='r' && strcmp(fieldName, "request")==0) return base+4;
+    if (fieldName[0]=='f' && strcmp(fieldName, "flow_size")==0) return base+5;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -414,8 +431,9 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "int",
         "string",
         "int",
+        "uint64_t",
     };
-    return (field>=0 && field<5) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<6) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -487,6 +505,7 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
         case 2: return long2string(pp->getMiss_hop());
         case 3: return oppstring2string(pp->getId());
         case 4: return long2string(pp->getRequest());
+        case 5: return uint642string(pp->getFlow_size());
         default: return "";
     }
 }
@@ -506,6 +525,7 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
         case 2: pp->setMiss_hop(string2long(value)); return true;
         case 3: pp->setId((value)); return true;
         case 4: pp->setRequest(string2long(value)); return true;
+        case 5: pp->setFlow_size(string2uint64(value)); return true;
         default: return false;
     }
 }

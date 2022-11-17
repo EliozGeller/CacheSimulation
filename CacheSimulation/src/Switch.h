@@ -41,7 +41,7 @@ class Switch : public cSimpleModule
     partition_rule* miss_table;
     int miss_table_size;
     unsigned long int elephant_count; //Counter for sampling packets in RX
-    unsigned long long int byte_count;
+    unsigned long long int byte_count = 0;
     unsigned long long int byte_count_per_link[10] = {0};
     unsigned long long int before_hit_byte_count[10] = {0};
     unsigned long long int after_hit_byte_count[10] = {0};
@@ -51,7 +51,7 @@ class Switch : public cSimpleModule
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
 
-    //
+    //replace to par:
     int type;
     int elephant_sample_rx;
     long double processing_time_on_data_packet_in_sw;
@@ -64,7 +64,11 @@ class Switch : public cSimpleModule
     long double check_for_elephant_time;
     int threshold;
     int num_of_agg;
-    //
+
+
+    //flow count:
+    cHistogram flow_count_hist;
+    std::map<string, int> flow_count;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

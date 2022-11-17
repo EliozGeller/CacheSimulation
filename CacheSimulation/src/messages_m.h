@@ -29,6 +29,7 @@ namespace cachesimulation {
  *     int miss_hop = 0;
  *     string id;
  *     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
+ *     uint64_t flow_size = 0;
  * }
  * </pre>
  */
@@ -40,6 +41,7 @@ class DataPacket : public ::omnetpp::cPacket
     int miss_hop;
     ::omnetpp::opp_string id;
     int request;
+    uint64_t flow_size;
 
   private:
     void copy(const DataPacket& other);
@@ -68,13 +70,15 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setId(const char * id);
     virtual int getRequest() const;
     virtual void setRequest(int request);
+    virtual uint64_t getFlow_size() const;
+    virtual void setFlow_size(uint64_t flow_size);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:30</tt> by nedtool.
+ * Class generated from <tt>messages.msg:31</tt> by nedtool.
  * <pre>
  * packet InsertionPacket
  * {
@@ -124,7 +128,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj)
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:38</tt> by nedtool.
+ * Class generated from <tt>messages.msg:39</tt> by nedtool.
  * <pre>
  * packet Data_for_partition
  * {
@@ -163,7 +167,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& o
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:43</tt> by nedtool.
+ * Class generated from <tt>messages.msg:44</tt> by nedtool.
  * <pre>
  * packet Partition_update_msg
  * {

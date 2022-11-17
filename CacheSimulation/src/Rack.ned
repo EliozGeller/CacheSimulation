@@ -7,6 +7,7 @@ module Rack
 {
     parameters:
         int number_of_hosts;
+        string last_flow_appearance;
     gates:
         inout port[];
     submodules:

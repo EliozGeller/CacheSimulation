@@ -2,6 +2,7 @@
 #include <string>
 #include <stdlib.h>     /* atoi */
 
+
 using namespace omnetpp;
 using namespace std;
 
@@ -9,8 +10,13 @@ using namespace std;
 //#define POLICYSIZE 10000
 
 
+
+
 //Delays:
 #define MICROSECOND 0.000001
+
+
+#define INTERVAL 1000*MICROSECOND
 //#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
 //#define INSERTION_DELAY 2*MICROSECOND
 //#define EVICTION_DELAY 2*MICROSECOND
@@ -71,6 +77,8 @@ using namespace std;
 #define INSERTION_DELAY_PCK 10
 #define EVICTION_DELAY_PCK 11
 #define HUB_QUEUE_MSG 12
+#define HIST_MSG 13
+#define FLOW_COUNT_M 103
 
 
 

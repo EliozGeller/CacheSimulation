@@ -216,6 +216,8 @@ void Controller::finish()
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     delete[] partition;
+
+    recordScalar("Type: ", INTERVAL);
 }
 
 

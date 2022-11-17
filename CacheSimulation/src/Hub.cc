@@ -20,6 +20,8 @@
 #include "messages_m.h"
 #include "Definitions.h"
 
+#include <map>
+
 using namespace omnetpp;
 
 namespace cachesimulation {
@@ -32,7 +34,15 @@ class Hub : public cSimpleModule
 private:
     cQueue msg_queue;
     unsigned long long int byte_count = 0;
+    unsigned long long int window_byte_count = 0;
+    unsigned long long int flowlet_count_size = 0;
+    cOutVector flowlet_count;
+    cHistogram bandwidth_hist;
+    cHistogram bandwidth_hist_per_sec;
     simtime_t end_time = 0;
+    cHistogram flow_count_hist;
+    std::map<string, int> flow_count;
+    std::map<string, int> flow_count_total;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
@@ -44,7 +54,7 @@ private:
 
 #endif
 
-
+#include <map>
 
 
 namespace cachesimulation {
@@ -53,24 +63,105 @@ Define_Module(Hub);
 
 void Hub::initialize()
 {
-EV << "x = " << gate("port$o",0)->getTransmissionChannel()->getNominalDatarate() << endl;
-cPacket *pkt = new cPacket("Queue_msg");
+    flow_count_hist.setName("flow count");
+    bandwidth_hist.setName("bandwidth hist");
+    bandwidth_hist_per_sec.setName("bandwidth_hist_per_sec");
 
-pkt->setByteLength(1500);
-EV << "y = " << gate("port$o",0)->getTransmissionChannel()->calculateDuration(pkt) << endl;
+    cMessage *m = new cMessage("flow_count");
+    m->setKind(FLOW_COUNT_M);
+    scheduleAt(simTime() + INTERVAL,m);
+
+
+    //new Histogram;
+
+    cMessage *hist_msg = new cMessage("hist_msg");
+    hist_msg->setKind(HIST_MSG);
+    scheduleAt(simTime() + 1,hist_msg);
+    //end new histogram
+
+    flowlet_count.setName("flowlet_count");
+
 }
 
 void Hub::handleMessage(cMessage *msg)
 {
-    if(!msg->isSelfMessage()){
-        cPacket *m = check_and_cast<cPacket *>(msg);
-        byte_count += m->getByteLength();
+
+    //histogram per 1 sec:
+    if(msg->getKind() == HIST_MSG){
+       string name =  "";
+       simtime_t t = simTime(),t1 =  simTime() + 1;
+       name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
+       bandwidth_hist_per_sec.recordAs(name.c_str());
+       bandwidth_hist_per_sec.clear();
+
+       scheduleAt(simTime() + 1,msg);
+       return;
     }
-
-    //send(msg, "port$o", 0);
-    //return;
+    //end histogram per 1 s
 
 
+
+    //
+    static int x = 0;
+    //
+
+
+    //byte count:
+    if(!msg->isSelfMessage()){
+        DataPacket *m = check_and_cast<DataPacket *>(msg);
+        byte_count += m->getByteLength();
+        window_byte_count += m->getByteLength();
+        flowlet_count_size += m->getFlow_size();
+
+
+    }
+    //end byte count
+
+
+    //flow_count
+    int kind_of_packet = msg->getKind();
+    if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
+        DataPacket *pkt = check_and_cast<DataPacket *>(msg);
+        flow_count.insert({get_flow(pkt->getId()),1});
+        flow_count_total.insert({get_flow(pkt->getId()),1});
+
+        //
+        if(pkt->getExternal_destination() == 1001){
+            flow_count.erase(get_flow(pkt->getId()));
+            delete pkt;
+            x++;
+            return;
+        }
+        //
+    }
+    if(msg->getKind() == FLOW_COUNT_M){
+        flow_count_hist.collect(flow_count.size() + x);
+        EV << "flow_count: "<< flow_count.size() << endl;
+        //flow_count.clear();
+        x = 0;
+        scheduleAt(simTime() + INTERVAL,msg);
+
+
+
+        bandwidth_hist.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000.0));
+        bandwidth_hist_per_sec.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000.0));
+        window_byte_count = 0;
+
+
+        flowlet_count.record((long double)(flowlet_count_size*8)/(INTERVAL));
+        flowlet_count_size = 0;
+
+
+        return;
+    }
+    //end flow count
+
+
+    //regular send:
+    send(msg, "port$o", 0);
+    return;
+
+    //Queueing:
     if(msg->getKind() != HUB_QUEUE_MSG){// packet from host
         my_send(msg);
     }
@@ -113,6 +204,14 @@ void Hub::my_send(cMessage *msg){
 }
 
 void Hub::finish(){
-    EV << "Bandwidth in Hub: "<< (long double)byte_count/simTime().dbl()<< "bps"<< endl;
+    EV << "Bandwidth in Hub: "<< (long double)(byte_count*8)/simTime().dbl()<< "bps"<< endl;
+    EV << "queue size: " <<  msg_queue.getLength() << endl;
+
+    flow_count_hist.recordAs("flow count");
+    bandwidth_hist.recordAs("bandwidth hist");
+
+    recordScalar("scalar: Total number of flows in the simulation:", flow_count_total.size());
+    EV << " Total number of flows in the simulation : " << flow_count_total.size() << endl;
+
 }
 }; // namespace
