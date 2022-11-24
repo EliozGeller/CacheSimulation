@@ -172,22 +172,34 @@ void Controller::initialization_start_time_for_flows(){
     int number_of_hosts =  getParentModule()->getSubmodule("rack",0)->par("number_of_hosts").intValue();
 
 
-    long double flow_appearance,last_flow = 0;
+    long double flow_appearance = 0,last_flow = 0;
     long double inter_arrival_time_between_flows = stold(getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
 
     string s;
 
+
+
     for(int i = 0;i < NumOfToRs;i++){
+        int initial_number_of_flows = 0;//632;
         for(int j = 0;j < number_of_hosts;j++){
-            flow_appearance = last_flow + exponential(inter_arrival_time_between_flows);
+            if(initial_number_of_flows <= 0){
+                flow_appearance = last_flow + exponential(inter_arrival_time_between_flows);
+                last_flow = flow_appearance;
+            }
+            else {
+                initial_number_of_flows--;
+            }
+
+
             s =  my_to_string(flow_appearance);
             getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_appearance").setStringValue(s); //set flow_appearance in host j in rack i
-            last_flow = flow_appearance;
+
 
             //s = to_string(draw_flow_size()); //change
             //getParentModule()->getSubmodule("rack",i)->getSubmodule("host",j)->par("flow_size").setStringValue(s); //set flow_size in host j in rack i
         }
         last_flow = 0;
+        flow_appearance = 0;
     }
 }
 

@@ -19,6 +19,10 @@
 #include "Destination.h"
 #include "Definitions.h"
 
+#include <iostream>
+#include <fstream>
+using namespace std;
+
 
 
 namespace cachesimulation {
@@ -30,23 +34,85 @@ void Destination::initialize()
     miss_count.setName("miss count");
     out_of_order.setName("out of order");
     packet_counter = 0;
+
+
+    //new Histogram;
+    cMessage *hist_msg = new cMessage("hist_msg");
+    hist_msg->setKind(HIST_MSG);
+    scheduleAt(simTime() + START_TIME + 1,hist_msg);
+    //end new histogram
 }
 
 void Destination::handleMessage(cMessage *message)
 {
+
+    //histogram per 1 sec:
+    if(message->getKind() == HIST_MSG){
+       string name =  "";
+       simtime_t t = simTime() - 1,t1 =  simTime();
+       name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
+       miss_count.recordAs(name.c_str());
+       out_of_order.recordAs(name.c_str());
+
+       //print  maps:
+       ofstream MyFile(name + ".txt");
+           //print miss count:
+           MyFile << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
+           for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = miss_count_map.begin();
+              it != miss_count_map.end(); ++it)
+           {
+              MyFile << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+           }
+           MyFile << "}"<< std::endl;
+
+           ////print out of order:
+           MyFile << "#######################################################\nout of order:{size,rate,count,value}\n{\n";
+           for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = out_of_order_map.begin();
+              it != out_of_order_map.end(); ++it)
+           {
+               MyFile << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+           }
+           MyFile << "}"<< std::endl;
+           MyFile.close();
+
+       scheduleAt(simTime() + 1,message);
+       return;
+    }
+    //end histogram per 1 s
+
+
+
+
     packet_counter++;
     DataPacket *msg = check_and_cast<DataPacket *>(message);
     EV <<" id = " <<msg->getId() << endl;
 
     //statistics for miss count
-    //miss_count.collect(msg->getMiss_hop());
+    miss_count.collect(msg->getMiss_hop());
 
     //statistics for out of order
-    //out_of_order_statistics(msg);
+    long long int diff = out_of_order_statistics(msg);
+
+
+    //miss_count_map:
+    unsigned int flow_size = msg->getFlow_size();
+    unsigned long long int rate = (unsigned long long int)(msg->getRate())/(100000000.0);
+
+    miss_count_map[std::make_pair(flow_size,rate)] = std::make_pair(miss_count_map[std::make_pair(flow_size,rate)].first + 1,miss_count_map[std::make_pair(flow_size,rate)].second + msg->getMiss_hop());
+    out_of_order_map[std::make_pair(flow_size,rate)] = std::make_pair(out_of_order_map[std::make_pair(flow_size,rate)].first + 1,out_of_order_map[std::make_pair(flow_size,rate)].second + diff);
+
 
     //delete msg;
     cancelAndDelete(msg);
 
+}
+
+long long int Destination::out_of_order_statistics(DataPacket* msg)
+{
+    long long int diff = get_sequence(msg->getId()) - expected_sequence[get_flow(msg->getId())];
+    out_of_order.collect(diff);
+    expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId());
+    return diff;
 }
 
 void Destination::finish()
@@ -60,14 +126,31 @@ void Destination::finish()
 
     miss_count.recordAs("miss count");
     out_of_order.recordAs("out of order");
+
+
+    //print  maps:
+    //print miss count:
+    EV << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
+    for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = miss_count_map.begin();
+       it != miss_count_map.end(); ++it)
+    {
+       EV << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+    }
+    EV << "}"<< std::endl;
+
+    ////print out of order:
+    EV << "#######################################################\nout of order:{size,rate,count,value}\n{\n";
+    for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = out_of_order_map.begin();
+       it != out_of_order_map.end(); ++it)
+    {
+       EV << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+    }
+    EV << "}"<< std::endl;
+
 }
 
-void Destination::out_of_order_statistics(DataPacket* msg)
-{
-    long long int diff = get_sequence(msg->getId()) - expected_sequence[get_flow(msg->getId())];
-    out_of_order.collect(diff);
-    expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId());
-}
+
+
 
 
 }; // namespace

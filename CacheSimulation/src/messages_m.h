@@ -30,6 +30,8 @@ namespace cachesimulation {
  *     string id;
  *     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
  *     uint64_t flow_size = 0;
+ *     double rate;
+ *     int first_packet = 0;
  * }
  * </pre>
  */
@@ -42,6 +44,8 @@ class DataPacket : public ::omnetpp::cPacket
     ::omnetpp::opp_string id;
     int request;
     uint64_t flow_size;
+    double rate;
+    int first_packet;
 
   private:
     void copy(const DataPacket& other);
@@ -72,13 +76,17 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setRequest(int request);
     virtual uint64_t getFlow_size() const;
     virtual void setFlow_size(uint64_t flow_size);
+    virtual double getRate() const;
+    virtual void setRate(double rate);
+    virtual int getFirst_packet() const;
+    virtual void setFirst_packet(int first_packet);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:31</tt> by nedtool.
+ * Class generated from <tt>messages.msg:33</tt> by nedtool.
  * <pre>
  * packet InsertionPacket
  * {
@@ -128,7 +136,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj)
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:39</tt> by nedtool.
+ * Class generated from <tt>messages.msg:41</tt> by nedtool.
  * <pre>
  * packet Data_for_partition
  * {
@@ -167,7 +175,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& o
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:44</tt> by nedtool.
+ * Class generated from <tt>messages.msg:46</tt> by nedtool.
  * <pre>
  * packet Partition_update_msg
  * {

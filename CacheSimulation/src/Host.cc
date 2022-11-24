@@ -34,28 +34,43 @@ Define_Module(Host);
 
 void Host::initialize()
 {
-    int flow_id =  getParentModule()->getIndex() * (int)getParentModule()->par("number_of_hosts") + getIndex();
+
+    inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
+    inter_arrival_time_between_flows = (simtime_t)stold(getParentModule()->getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
+
+
     simtime_t start_time = (simtime_t)stold(par("flow_appearance").stdstringValue());
     EV << "start_time = " << start_time << endl;
 
     //set maximum of id and last flow appearance:
-    if(flow_id > stoi(getParentModule()->getParentModule()->par("last_flow_id").stdstringValue())){
-        getParentModule()->getParentModule()->par("last_flow_id").setStringValue(to_string(flow_id));
-    }
     if(start_time > (simtime_t)stold(getParentModule()->par("last_flow_appearance").stdstringValue())){
         getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
     }
 
-    start_flow(start_time,flow_id);
+
+    //later_start:
+    long double avg_flow_size = 4865995.738;
+    long double avg_rate = 2.5*1000000000;
+    simtime_t avg_transmination_time_of_flow = (long double)(avg_flow_size*8)/avg_rate + (((avg_flow_size > stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue())) ? 10 : 1) - 1)*inter_arrival_time_between_flowlets.dbl();
+    uint64_t n = (uint64_t)((START_TIME - start_time)/(avg_transmination_time_of_flow + inter_arrival_time_between_flows));
+
+    simtime_t new_start_time = n*(avg_transmination_time_of_flow + inter_arrival_time_between_flows);
+    EV << "XXXX = "<< new_start_time << endl;
+
+    start_flow(start_time);
 }
-void Host::start_flow(simtime_t arrival_time,int flow_id){
+void Host::start_flow(simtime_t arrival_time){
+
+    if(genpack)cancelAndDelete(genpack);
+
     first = true;
     sequence = 0;
-    id = flow_id;
+    id = getSimulation()->getUniqueNumber();
     EV <<"Start flow!!" << endl;
     EV << "id in rack "<<  getParentModule()->getIndex() << " in Host "<< getIndex() << " is " << id << endl;
     //flow_size = stoull(par("flow_size").stdstringValue());
     flow_size = draw_flow_size();
+    if(arrival_time == 0.0)flow_size = 0.5*flow_size;
     //flow_size = 100000;
     uint64_t policy_size =  stoull(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
     destination = (uint64_t)uniform(1,policy_size); //change
@@ -63,14 +78,13 @@ void Host::start_flow(simtime_t arrival_time,int flow_id){
     //inter_arrival_time_between_packets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_packets").stdstringValue());//real one
 
     //test:
-    long double rate = draw_rate(4000);
+    rate = draw_rate(4000);
     //long double rate = 500000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
 
     inter_arrival_time_between_packets = (simtime_t)((1500.0*8.0)/rate);
     EV << "Rate = "<< rate << " bps" << endl;
     //end test
 
-    inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
 
     EV << "inter_arrival_time_between_packets = "<< inter_arrival_time_between_packets << endl;
     EV << "inter_arrival_time_between_flowlets = "<< inter_arrival_time_between_flowlets << endl;
@@ -121,31 +135,49 @@ long double Host::draw_rate(int mean){
 
 void Host::handleMessage(cMessage *message)
 {
+    int first_flag = 0,size_packet = 1500;
 
-
+    if(first){
+          first_flag = 1;
+          first = false;
+    }
 
    simtime_t arrival_time;
    switch(message->getKind()){
         case GENERATEPACKET:
           {
           //creat data packet:
-
-          DataPacket *msg = new DataPacket("Data Packet");
-          msg->setKind(DATAPACKET);
-          msg->setDestination(destination);
-          std::string str_id = create_id(id,flowlet_count,sequence);
-          EV << "id = "<< str_id << endl;
-          msg->setId(str_id.c_str());
-          int size_packet = 1500;
-          msg->setByteLength(size_packet);
-
-          if(first){
+          if(simTime()>= START_TIME){
+              DataPacket *msg = new DataPacket("Data Packet");
+              msg->setKind(DATAPACKET);
+              msg->setDestination(destination);
+              std::string str_id = create_id(id,flowlet_count,sequence);
+              EV << "id = "<< str_id << endl;
+              msg->setId(str_id.c_str());
+              msg->setByteLength(size_packet);
               msg->setFlow_size(flow_size);
-              first = false;
+              msg->setRate(rate);
+
+              msg->setFirst_packet(first_flag);
+
+              //send the data packet:
+              send(msg, "port$o", 0);
           }
 
-          //send the data packet:
-          send(msg, "port$o", 0);
+          //Checking whether the flow ends before the start of the time
+          else{
+              simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+              if(((simTime() + transmination_time_of_flow) < START_TIME) && first){
+                  //flowlet_count = number_of_flowlet + 1;
+                  //flowlet_size = -1;
+
+                  simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
+                  getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
+
+                  start_flow(start_time);
+                  return;
+              }
+          }
 
 
 
@@ -153,14 +185,18 @@ void Host::handleMessage(cMessage *message)
           sequence++;
           flowlet_size -= size_packet;
           EV << "flowlet_size = "<< flowlet_size << endl;
+
+
           if(flowlet_size < 0){
               //send last message:
+              if(simTime()>= START_TIME){
                   DataPacket *ma = new DataPacket("Data Packet");
                   ma->setKind(DATAPACKET);
                   std::string str_id1 = create_id(id,flowlet_count,sequence);
                   ma->setId(str_id1.c_str());
                   ma->setExternal_destination(1001);
                   send(ma, "port$o", 0);
+              }
 
               //end send last message
 
@@ -173,18 +209,12 @@ void Host::handleMessage(cMessage *message)
 
 
                 //strat new flow:
-
-                cancelAndDelete(genpack);
-                int flow_id = stoi(getParentModule()->getParentModule()->par("last_flow_id").stdstringValue()) + 1;
-                getParentModule()->getParentModule()->par("last_flow_id").setStringValue(to_string(flow_id));
-                long double inter_arrival_time_between_flows = stold(getParentModule()->getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
-
                 simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
                 getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
 
 
 
-                start_flow(start_time,flow_id);
+                start_flow(start_time);
                 //end start new flow
                 return;
               }

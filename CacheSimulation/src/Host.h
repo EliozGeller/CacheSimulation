@@ -32,19 +32,21 @@ private:
    int id;
    uint64_t destination;
    long long int flow_size; //in bytes
+   long double rate;
    long long int flowlet_size;
    int number_of_flowlet;
    int flowlet_count;
    uint64_t sequence;
    simtime_t inter_arrival_time_between_packets;
    simtime_t inter_arrival_time_between_flowlets;
-   cMessage *genpack;
+   simtime_t inter_arrival_time_between_flows;
+   cMessage *genpack = nullptr;
    bool first;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void finish();
-    virtual void start_flow(simtime_t arrival_time,int flow_id);
+    virtual void start_flow(simtime_t arrival_time);
     virtual uint64_t draw_flow_size();
     virtual long double draw_rate(int mean);
 };

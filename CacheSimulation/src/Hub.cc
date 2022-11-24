@@ -69,14 +69,14 @@ void Hub::initialize()
 
     cMessage *m = new cMessage("flow_count");
     m->setKind(FLOW_COUNT_M);
-    scheduleAt(simTime() + INTERVAL,m);
+    scheduleAt(simTime() + START_TIME + INTERVAL,m);
 
 
     //new Histogram;
 
     cMessage *hist_msg = new cMessage("hist_msg");
     hist_msg->setKind(HIST_MSG);
-    scheduleAt(simTime() + 1,hist_msg);
+    scheduleAt(simTime() + START_TIME + 1,hist_msg);
     //end new histogram
 
     flowlet_count.setName("flowlet_count");
@@ -89,7 +89,7 @@ void Hub::handleMessage(cMessage *msg)
     //histogram per 1 sec:
     if(msg->getKind() == HIST_MSG){
        string name =  "";
-       simtime_t t = simTime(),t1 =  simTime() + 1;
+       simtime_t t = simTime() - 1,t1 =  simTime();
        name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
        bandwidth_hist_per_sec.recordAs(name.c_str());
        bandwidth_hist_per_sec.clear();
@@ -111,7 +111,7 @@ void Hub::handleMessage(cMessage *msg)
         DataPacket *m = check_and_cast<DataPacket *>(msg);
         byte_count += m->getByteLength();
         window_byte_count += m->getByteLength();
-        flowlet_count_size += m->getFlow_size();
+        flowlet_count_size += m->getFirst_packet()*m->getFlow_size();
 
 
     }
@@ -157,8 +157,17 @@ void Hub::handleMessage(cMessage *msg)
     //end flow count
 
 
+    //forward the packet:
+
+
     //regular send:
-    send(msg, "port$o", 0);
+    if(simTime()>= START_TIME){
+        send(msg, "port$o", 0);
+    }
+    else{
+        delete msg;
+    }
+
     return;
 
     //Queueing:

@@ -34,11 +34,15 @@ class Destination : public cSimpleModule
     cHistogram out_of_order;
     unsigned long long int packet_counter;
     std::map<std::string, long long int> expected_sequence;
+    std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  miss_count_map;
+    std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  out_of_order_map;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
-    virtual void out_of_order_statistics(DataPacket* msg);
+    //virtual void print_data(std::string file_name);
+    long long int out_of_order_statistics(DataPacket* msg);
+
 };
 
 }; // namespace

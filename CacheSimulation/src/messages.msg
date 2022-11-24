@@ -25,6 +25,8 @@ packet DataPacket
     string id;
     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
     uint64_t flow_size = 0;
+    double rate;
+    int first_packet = 0;
 }
 
 packet InsertionPacket

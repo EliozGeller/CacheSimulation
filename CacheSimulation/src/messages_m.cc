@@ -187,6 +187,8 @@ DataPacket::DataPacket(const char *name, short kind) : ::omnetpp::cPacket(name,k
     this->miss_hop = 0;
     this->request = 0;
     this->flow_size = 0;
+    this->rate = 0;
+    this->first_packet = 0;
 }
 
 DataPacket::DataPacket(const DataPacket& other) : ::omnetpp::cPacket(other)
@@ -214,6 +216,8 @@ void DataPacket::copy(const DataPacket& other)
     this->id = other.id;
     this->request = other.request;
     this->flow_size = other.flow_size;
+    this->rate = other.rate;
+    this->first_packet = other.first_packet;
 }
 
 void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -225,6 +229,8 @@ void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->id);
     doParsimPacking(b,this->request);
     doParsimPacking(b,this->flow_size);
+    doParsimPacking(b,this->rate);
+    doParsimPacking(b,this->first_packet);
 }
 
 void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -236,6 +242,8 @@ void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->id);
     doParsimUnpacking(b,this->request);
     doParsimUnpacking(b,this->flow_size);
+    doParsimUnpacking(b,this->rate);
+    doParsimUnpacking(b,this->first_packet);
 }
 
 uint64_t DataPacket::getDestination() const
@@ -296,6 +304,26 @@ uint64_t DataPacket::getFlow_size() const
 void DataPacket::setFlow_size(uint64_t flow_size)
 {
     this->flow_size = flow_size;
+}
+
+double DataPacket::getRate() const
+{
+    return this->rate;
+}
+
+void DataPacket::setRate(double rate)
+{
+    this->rate = rate;
+}
+
+int DataPacket::getFirst_packet() const
+{
+    return this->first_packet;
+}
+
+void DataPacket::setFirst_packet(int first_packet)
+{
+    this->first_packet = first_packet;
 }
 
 class DataPacketDescriptor : public omnetpp::cClassDescriptor
@@ -363,7 +391,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 6+basedesc->getFieldCount() : 6;
+    return basedesc ? 8+basedesc->getFieldCount() : 8;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -381,8 +409,10 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<6) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<8) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -400,8 +430,10 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "id",
         "request",
         "flow_size",
+        "rate",
+        "first_packet",
     };
-    return (field>=0 && field<6) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<8) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -414,6 +446,8 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+3;
     if (fieldName[0]=='r' && strcmp(fieldName, "request")==0) return base+4;
     if (fieldName[0]=='f' && strcmp(fieldName, "flow_size")==0) return base+5;
+    if (fieldName[0]=='r' && strcmp(fieldName, "rate")==0) return base+6;
+    if (fieldName[0]=='f' && strcmp(fieldName, "first_packet")==0) return base+7;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -432,8 +466,10 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "string",
         "int",
         "uint64_t",
+        "double",
+        "int",
     };
-    return (field>=0 && field<6) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<8) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -506,6 +542,8 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
         case 3: return oppstring2string(pp->getId());
         case 4: return long2string(pp->getRequest());
         case 5: return uint642string(pp->getFlow_size());
+        case 6: return double2string(pp->getRate());
+        case 7: return long2string(pp->getFirst_packet());
         default: return "";
     }
 }
@@ -526,6 +564,8 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
         case 3: pp->setId((value)); return true;
         case 4: pp->setRequest(string2long(value)); return true;
         case 5: pp->setFlow_size(string2uint64(value)); return true;
+        case 6: pp->setRate(string2double(value)); return true;
+        case 7: pp->setFirst_packet(string2long(value)); return true;
         default: return false;
     }
 }

@@ -29,7 +29,7 @@ void Switch::initialize()
     flow_count_hist.setName("flow count");
     cMessage *mmmm = new cMessage("flow_count");
     mmmm->setKind(FLOW_COUNT_M);
-    scheduleAt(simTime() + INTERVAL,mmmm);
+    scheduleAt(simTime() + START_TIME +INTERVAL,mmmm);
 
 
     //real start:
@@ -92,7 +92,7 @@ void Switch::initialize()
 
     //initialize Elephant process:
 
-
+/*
     elephant_count = 0;
     cMessage* m1 = new cMessage("Flush elephant timer");
     cMessage* m2 = new cMessage("Check for elephant timer");
@@ -100,18 +100,10 @@ void Switch::initialize()
     m1->setKind(FLUSH_ELEPHANT_PKT);
     m2->setKind(CHECK_FOR_ELEPHANT_PKT);
 
-    scheduleAt(simTime() + stold(getParentModule()->par("flush_elephant_time").stdstringValue()),m1);
-    scheduleAt(simTime() + stold(getParentModule()->par("check_for_elephant_time").stdstringValue()),m2);
-
-
-
-    /*
-    //miss count:
-    cMessage* m3 = new cMessage("miss count timer");
-    scheduleAt(simTime() + 0.001,m3);
-    misscount.setName("missCount");
-    //end miss count
+    scheduleAt(simTime() + START_TIME ,m1);
+    scheduleAt(simTime() + START_TIME,m2);
     */
+
 }
 
 void Switch::handleMessage(cMessage *message)
@@ -140,19 +132,6 @@ void Switch::handleMessage(cMessage *message)
     //end flow count
 
 
-/*
-    /////start test:
-    msg = check_and_cast<DataPacket *>(message);
-    sendDelayed(msg,0.0000005, "port$o",  hit_forward(msg->getDestination())); //Model the processing time on a data packet
-    //sendDelayed(msg,stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue()), "port$o",  hit_forward(msg->getDestination())); //Model the processing time on a data packet
-    //important!!!!!!!!!!!!!!!!!!!!!! doen't work
-    return;
-
-    delete message;  /////////////////work
-    return;
-    //end test
-
-*/
 
     //miss count:
     if(!strcmp(message->getName(),"miss count timer")){
