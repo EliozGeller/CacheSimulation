@@ -1,27 +1,27 @@
+file 1188175 1669543798                                         
 version 2
-run General-0-20221127-12:52:06-14524
+run General-0-20221126-15:31:03-9744
 attr configname General
-attr datetime 20221127-12:52:06
+attr datetime 20221126-15:31:03
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 14524
+attr processid 9744
 attr repetition 0
 attr replication #0
 attr resultdir results
 attr runnumber 0
 attr seedset 0
-param Network.output_file "\"aa\""
 param Network.NumOfToRs 5
 param Network.NumOfAggregation 3
-param Network.rack[*].number_of_hosts 500
+param Network.rack[*].number_of_hosts 50000
 param Network.linedelay 0.2
-param Network.tor[*].CacheSize 0
-param Network.agg[*].CacheSize 0
-param Network.controllerswitch.CacheSize 0
+param Network.tor[*].CacheSize 1000
+param Network.agg[*].CacheSize 1000
+param Network.controllerswitch.CacheSize 1000
 param Network.tor[*].threshold 2
 param Network.agg[*].threshold 2
 param Network.controllerswitch.threshold 1
@@ -54,13 +54,14 @@ param Network.large_flow "\"\""
 param Network.last_flow_appearance "\"0\""
 param Network.rack[*].last_flow_appearance "\"0\""
 
-scalar Network.tor[0] "cache_size: " 1000
-scalar Network.tor[1] "cache_size: " 1000
-scalar Network.tor[2] "cache_size: " 1000
-scalar Network.tor[3] "cache_size: " 1000
-scalar Network.tor[4] "cache_size: " 1000
-scalar Network.agg[0] "cache_size: " 1000
-scalar Network.agg[1] "cache_size: " 1000
-scalar Network.agg[2] "cache_size: " 1000
-scalar Network.controllerswitch "cache_size: " 1000
+vector 0 Network.rack[0].hub flowlet_count ETV
+vector 1 Network.rack[1].hub flowlet_count ETV
+vector 2 Network.rack[2].hub flowlet_count ETV
+vector 3 Network.rack[3].hub flowlet_count ETV
+vector 4 Network.rack[4].hub flowlet_count ETV
+0	2255 237211 1519457811 30132286945 3.001 10 7000 19212576000 9749736944000 1.1411728661056e+016 3.5618244505938e+028
+1	239466 237072 1519457812 30132286946 3.001 10 7000 17665280000 10969148448000 1.1041554032128e+016 3.429388793374e+028
+2	476538 237136 1519457813 30132286947 3.001 10 7000 15419216000 9830623368000 1.1144915679832e+016 3.4209453978046e+028
+3	713674 237265 1519457814 30132286948 3.001 10 7000 18119136000 9980930624000 1.1179072802256e+016 3.4061943893629e+028
+4	950939 237234 1519457815 30132286949 3.001 10 7000 16387856000 8996577952000 1.1293590146112e+016 3.4721381436367e+028
 

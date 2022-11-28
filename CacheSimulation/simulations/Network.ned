@@ -71,8 +71,9 @@ network Network
         string large_flow;
         
         //creation of new flow:
-        string last_flow_id;
         string last_flow_appearance;
+        
+        string output_file;
 
 
         //end simulation parameters
@@ -108,7 +109,7 @@ network Network
         }
     connections:
         for i=0..NumOfToRs-1 {
-            rack[i].port++ <--> rate_ch <--> tor[i].port++;//rate_ch
+            rack[i].port++ <--> delay_ch <--> tor[i].port++;//rate_ch
         }
         controllerswitch.port++ <--> delay_ch <--> controller.port++;
         for i=0..NumOfAggregation-1 {

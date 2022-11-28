@@ -1,27 +1,27 @@
+file 1688638 1669096186                                         
 version 2
-run General-0-20221127-12:52:06-14524
+run General-0-20221121-08:10:49-20256
 attr configname General
-attr datetime 20221127-12:52:06
+attr datetime 20221121-08:10:49
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 14524
+attr processid 20256
 attr repetition 0
 attr replication #0
 attr resultdir results
 attr runnumber 0
 attr seedset 0
-param Network.output_file "\"aa\""
 param Network.NumOfToRs 5
 param Network.NumOfAggregation 3
-param Network.rack[*].number_of_hosts 500
+param Network.rack[*].number_of_hosts 50000
 param Network.linedelay 0.2
-param Network.tor[*].CacheSize 0
-param Network.agg[*].CacheSize 0
-param Network.controllerswitch.CacheSize 0
+param Network.tor[*].CacheSize 1000
+param Network.agg[*].CacheSize 1000
+param Network.controllerswitch.CacheSize 1000
 param Network.tor[*].threshold 2
 param Network.agg[*].threshold 2
 param Network.controllerswitch.threshold 1
@@ -51,16 +51,18 @@ param Network.inter_arrival_time_between_packets "\"\""
 param Network.inter_arrival_time_between_flowlets "\"\""
 param Network.inter_arrival_time_between_flows "\"\""
 param Network.large_flow "\"\""
+param Network.last_flow_id "\"0\""
 param Network.last_flow_appearance "\"0\""
 param Network.rack[*].last_flow_appearance "\"0\""
 
-scalar Network.tor[0] "cache_size: " 1000
-scalar Network.tor[1] "cache_size: " 1000
-scalar Network.tor[2] "cache_size: " 1000
-scalar Network.tor[3] "cache_size: " 1000
-scalar Network.tor[4] "cache_size: " 1000
-scalar Network.agg[0] "cache_size: " 1000
-scalar Network.agg[1] "cache_size: " 1000
-scalar Network.agg[2] "cache_size: " 1000
-scalar Network.controllerswitch "cache_size: " 1000
+vector 0 Network.rack[0].hub flowlet_count ETV
+vector 1 Network.rack[1].hub flowlet_count ETV
+vector 2 Network.rack[2].hub flowlet_count ETV
+vector 3 Network.rack[3].hub flowlet_count ETV
+vector 4 Network.rack[4].hub flowlet_count ETV
+0	2293 337218 721340 32363500765 0.001 10 10000 14185616000 9881393696000 1.5862238890088e+016 4.899219913864e+028
+1	339511 337214 721341 32363500766 0.001 10 10000 15228624000 9977755840000 1.5710365269656e+016 4.7799956279595e+028
+2	676725 337281 721342 32363500767 0.001 10 10000 16808064000 10032195520000 1.5860990287488e+016 4.8085003593927e+028
+3	1014006 337268 721343 32363500768 0.001 10 10000 17002024000 11559824024000 1.6011240420904e+016 4.9098691510406e+028
+4	1351274 337362 721344 32363500769 0.001 10 10000 16967216000 18565393528000 1.6234142543096e+016 5.0813016237236e+028
 
