@@ -26,7 +26,7 @@ void Controller::initialize()
     //set all parameters from csv file;
     set_all_parameters();
     initialization_start_time_for_flows();
-    packet_counter = 0;
+    byte_counter = 0;
 
     // Define the initial partition
     miss_table_size = getParentModule()->par("NumOfAggregation");
@@ -43,6 +43,21 @@ void Controller::initialize()
         last = last + diff + 1;
     }
     // End Define the initial partition
+
+    //set processing_time_on_data_packet_in_controller:
+    processing_time_on_data_packet_in_controller = (simtime_t)stold(getParentModule()->par("processing_time_on_data_packet_in_controller").stdstringValue());
+
+
+    //new Histogram;
+    bandwidth_hist.setName("bandwidth hist");
+    cMessage *hist_msg = new cMessage("hist_msg");
+    hist_msg->setKind(HIST_MSG);
+    scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
+
+    cMessage *m = new cMessage("flow_count");
+    m->setKind(INTERVAL_PCK);
+    scheduleAt(simTime() + START_TIME + INTERVAL,m);
+    //end new histogram
 
 
     //Start scheduling partition messages
@@ -62,16 +77,16 @@ void Controller::handleMessage(cMessage *message)
     Data_for_partition *pkt;
     switch(message->getKind()){
     case DATAPACKET:
-        packet_counter++;
         msg = check_and_cast<DataPacket *>(message);
+        byte_counter += msg->getBitLength();
         conpacket = new InsertionPacket("Insert rule Packet");
         conpacket->setKind(INSERTRULE_PUSH);
         conpacket->setRule(msg->getDestination());
-        send(conpacket, "port$o", 0);
+        sendDelayed(conpacket,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
         msg->setExternal_destination(1);
         msg->setKind(HITPACKET);
         msg->setName("Hit packet");
-        send(msg, "port$o", 0);//change
+        sendDelayed(msg,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
         break;
     case DATA_FOR_PARTITION://change
         pkt = check_and_cast<Data_for_partition *>(message);
@@ -89,7 +104,25 @@ void Controller::handleMessage(cMessage *message)
         conpacket->setKind(INSERTRULE_PULL);
         conpacket->setName("Insert rule Packet");
         //The rule and the switch destination are already sets
-        send(conpacket, "port$o", 0);
+        sendDelayed(conpacket,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
+        break;
+    }
+    case INTERVAL_PCK:
+    {
+        bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL*1000000000.0));
+        byte_counter = 0;
+
+        scheduleAt(simTime() + INTERVAL,message);
+        break;
+    }
+    case HIST_MSG:
+    {
+        string name =  "";
+        simtime_t t = simTime() - TIME_INTERVAL_FOR_OUTPUTS,t1 =  simTime();
+        name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
+        bandwidth_hist.recordAs(name.c_str());
+
+        scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,message);
         break;
     }
 
@@ -222,9 +255,9 @@ void Controller::finish()
 {
     // This function is called by OMNeT++ at the end of the simulation.
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    EV << "Total arrived packets in the Controller:   " << packet_counter << endl;
+    EV << "Total arrived packets in the Controller:   " << byte_counter << endl;
     EV << "Time in the Controller:   " << simTime() << endl;
-    EV << "Average throughput in the Controller:   " << (float)(packet_counter / simTime()) << endl;
+    EV << "Average throughput in the Controller:   " << (float)(byte_counter / simTime()) << endl;
     EV << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     delete[] partition;

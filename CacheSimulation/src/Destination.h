@@ -30,9 +30,11 @@ namespace cachesimulation {
 class Destination : public cSimpleModule
 {
   private:
+    std::string dir;
     cHistogram miss_count;
     cHistogram out_of_order;
-    unsigned long long int packet_counter;
+    cHistogram bandwidth_hist;
+    unsigned long long int byte_counter;
     std::map<std::string, long long int> expected_sequence;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  miss_count_map;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  out_of_order_map;

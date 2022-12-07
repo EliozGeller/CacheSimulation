@@ -92,3 +92,8 @@ string my_to_string(long double x){
     return str;
 
 }
+
+
+int rate_to_bin(long double rate){
+    return (int)((rate)/(100000000.0));
+}

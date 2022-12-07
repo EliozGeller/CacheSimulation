@@ -189,6 +189,7 @@ DataPacket::DataPacket(const char *name, short kind) : ::omnetpp::cPacket(name,k
     this->flow_size = 0;
     this->rate = 0;
     this->first_packet = 0;
+    this->last_packet = false;
 }
 
 DataPacket::DataPacket(const DataPacket& other) : ::omnetpp::cPacket(other)
@@ -218,6 +219,7 @@ void DataPacket::copy(const DataPacket& other)
     this->flow_size = other.flow_size;
     this->rate = other.rate;
     this->first_packet = other.first_packet;
+    this->last_packet = other.last_packet;
 }
 
 void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -231,6 +233,7 @@ void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->flow_size);
     doParsimPacking(b,this->rate);
     doParsimPacking(b,this->first_packet);
+    doParsimPacking(b,this->last_packet);
 }
 
 void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -244,6 +247,7 @@ void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->flow_size);
     doParsimUnpacking(b,this->rate);
     doParsimUnpacking(b,this->first_packet);
+    doParsimUnpacking(b,this->last_packet);
 }
 
 uint64_t DataPacket::getDestination() const
@@ -326,6 +330,16 @@ void DataPacket::setFirst_packet(int first_packet)
     this->first_packet = first_packet;
 }
 
+bool DataPacket::getLast_packet() const
+{
+    return this->last_packet;
+}
+
+void DataPacket::setLast_packet(bool last_packet)
+{
+    this->last_packet = last_packet;
+}
+
 class DataPacketDescriptor : public omnetpp::cClassDescriptor
 {
   private:
@@ -391,7 +405,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 8+basedesc->getFieldCount() : 8;
+    return basedesc ? 9+basedesc->getFieldCount() : 9;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -411,8 +425,9 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<8) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<9) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -432,8 +447,9 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "flow_size",
         "rate",
         "first_packet",
+        "last_packet",
     };
-    return (field>=0 && field<8) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<9) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -448,6 +464,7 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='f' && strcmp(fieldName, "flow_size")==0) return base+5;
     if (fieldName[0]=='r' && strcmp(fieldName, "rate")==0) return base+6;
     if (fieldName[0]=='f' && strcmp(fieldName, "first_packet")==0) return base+7;
+    if (fieldName[0]=='l' && strcmp(fieldName, "last_packet")==0) return base+8;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -468,8 +485,9 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "uint64_t",
         "double",
         "int",
+        "bool",
     };
-    return (field>=0 && field<8) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<9) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -544,6 +562,7 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
         case 5: return uint642string(pp->getFlow_size());
         case 6: return double2string(pp->getRate());
         case 7: return long2string(pp->getFirst_packet());
+        case 8: return bool2string(pp->getLast_packet());
         default: return "";
     }
 }
@@ -566,6 +585,7 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
         case 5: pp->setFlow_size(string2uint64(value)); return true;
         case 6: pp->setRate(string2double(value)); return true;
         case 7: pp->setFirst_packet(string2long(value)); return true;
+        case 8: pp->setLast_packet(string2bool(value)); return true;
         default: return false;
     }
 }
@@ -605,6 +625,7 @@ InsertionPacket::InsertionPacket(const char *name, short kind) : ::omnetpp::cPac
     this->type = 0;
     this->switch_type = 0;
     this->destination = 0;
+    this->s = 0;
 }
 
 InsertionPacket::InsertionPacket(const InsertionPacket& other) : ::omnetpp::cPacket(other)
@@ -630,6 +651,7 @@ void InsertionPacket::copy(const InsertionPacket& other)
     this->type = other.type;
     this->switch_type = other.switch_type;
     this->destination = other.destination;
+    this->s = other.s;
 }
 
 void InsertionPacket::parsimPack(omnetpp::cCommBuffer *b) const
@@ -639,6 +661,7 @@ void InsertionPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->type);
     doParsimPacking(b,this->switch_type);
     doParsimPacking(b,this->destination);
+    doParsimPacking(b,this->s);
 }
 
 void InsertionPacket::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -648,6 +671,7 @@ void InsertionPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->type);
     doParsimUnpacking(b,this->switch_type);
     doParsimUnpacking(b,this->destination);
+    doParsimUnpacking(b,this->s);
 }
 
 uint64_t InsertionPacket::getRule() const
@@ -688,6 +712,16 @@ int InsertionPacket::getDestination() const
 void InsertionPacket::setDestination(int destination)
 {
     this->destination = destination;
+}
+
+int InsertionPacket::getS() const
+{
+    return this->s;
+}
+
+void InsertionPacket::setS(int s)
+{
+    this->s = s;
 }
 
 class InsertionPacketDescriptor : public omnetpp::cClassDescriptor
@@ -755,7 +789,7 @@ const char *InsertionPacketDescriptor::getProperty(const char *propertyname) con
 int InsertionPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 4+basedesc->getFieldCount() : 4;
+    return basedesc ? 5+basedesc->getFieldCount() : 5;
 }
 
 unsigned int InsertionPacketDescriptor::getFieldTypeFlags(int field) const
@@ -771,8 +805,9 @@ unsigned int InsertionPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<4) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
 }
 
 const char *InsertionPacketDescriptor::getFieldName(int field) const
@@ -788,8 +823,9 @@ const char *InsertionPacketDescriptor::getFieldName(int field) const
         "type",
         "switch_type",
         "destination",
+        "s",
     };
-    return (field>=0 && field<4) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<5) ? fieldNames[field] : nullptr;
 }
 
 int InsertionPacketDescriptor::findField(const char *fieldName) const
@@ -800,6 +836,7 @@ int InsertionPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='t' && strcmp(fieldName, "type")==0) return base+1;
     if (fieldName[0]=='s' && strcmp(fieldName, "switch_type")==0) return base+2;
     if (fieldName[0]=='d' && strcmp(fieldName, "destination")==0) return base+3;
+    if (fieldName[0]=='s' && strcmp(fieldName, "s")==0) return base+4;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -816,8 +853,9 @@ const char *InsertionPacketDescriptor::getFieldTypeString(int field) const
         "int",
         "int",
         "int",
+        "int",
     };
-    return (field>=0 && field<4) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<5) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **InsertionPacketDescriptor::getFieldPropertyNames(int field) const
@@ -888,6 +926,7 @@ std::string InsertionPacketDescriptor::getFieldValueAsString(void *object, int f
         case 1: return long2string(pp->getType());
         case 2: return long2string(pp->getSwitch_type());
         case 3: return long2string(pp->getDestination());
+        case 4: return long2string(pp->getS());
         default: return "";
     }
 }
@@ -906,6 +945,7 @@ bool InsertionPacketDescriptor::setFieldValueAsString(void *object, int field, i
         case 1: pp->setType(string2long(value)); return true;
         case 2: pp->setSwitch_type(string2long(value)); return true;
         case 3: pp->setDestination(string2long(value)); return true;
+        case 4: pp->setS(string2long(value)); return true;
         default: return false;
     }
 }

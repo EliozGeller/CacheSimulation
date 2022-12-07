@@ -68,7 +68,7 @@ void Hub::initialize()
     bandwidth_hist_per_sec.setName("bandwidth_hist_per_sec");
 
     cMessage *m = new cMessage("flow_count");
-    m->setKind(FLOW_COUNT_M);
+    m->setKind(INTERVAL_PCK);
     scheduleAt(simTime() + START_TIME + INTERVAL,m);
 
 
@@ -76,7 +76,7 @@ void Hub::initialize()
 
     cMessage *hist_msg = new cMessage("hist_msg");
     hist_msg->setKind(HIST_MSG);
-    scheduleAt(simTime() + START_TIME + 1,hist_msg);
+    scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
     //end new histogram
 
     flowlet_count.setName("flowlet_count");
@@ -89,12 +89,12 @@ void Hub::handleMessage(cMessage *msg)
     //histogram per 1 sec:
     if(msg->getKind() == HIST_MSG){
        string name =  "";
-       simtime_t t = simTime() - 1,t1 =  simTime();
+       simtime_t t = simTime() - TIME_INTERVAL_FOR_OUTPUTS,t1 =  simTime();
        name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
        bandwidth_hist_per_sec.recordAs(name.c_str());
        bandwidth_hist_per_sec.clear();
 
-       scheduleAt(simTime() + 1,msg);
+       scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,msg);
        return;
     }
     //end histogram per 1 s
@@ -102,7 +102,7 @@ void Hub::handleMessage(cMessage *msg)
 
 
     //
-    static int x = 0;
+    static int number_of_flows_which_ends_during_the_interval= 0;
     //
 
 
@@ -125,20 +125,20 @@ void Hub::handleMessage(cMessage *msg)
         flow_count.insert({get_flow(pkt->getId()),1});
         flow_count_total.insert({get_flow(pkt->getId()),1});
 
-        //
-        if(pkt->getExternal_destination() == 1001){
+        //insert last message:
+        if(pkt->getLast_packet()){
             flow_count.erase(get_flow(pkt->getId()));
-            delete pkt;
-            x++;
-            return;
+            //delete pkt;
+            number_of_flows_which_ends_during_the_interval++;
+            //return;
         }
         //
     }
-    if(msg->getKind() == FLOW_COUNT_M){
-        flow_count_hist.collect(flow_count.size() + x);
+    if(msg->getKind() == INTERVAL_PCK){
+        flow_count_hist.collect(flow_count.size() + number_of_flows_which_ends_during_the_interval);
         EV << "flow_count: "<< flow_count.size() << endl;
         //flow_count.clear();
-        x = 0;
+        number_of_flows_which_ends_during_the_interval = 0;
         scheduleAt(simTime() + INTERVAL,msg);
 
 
@@ -161,12 +161,7 @@ void Hub::handleMessage(cMessage *msg)
 
 
     //regular send:
-    if(simTime()>= START_TIME){
-        send(msg, "port$o", 0);
-    }
-    else{
-        delete msg;
-    }
+    send(msg, "port$o", 0);
 
     return;
 

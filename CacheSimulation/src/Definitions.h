@@ -16,8 +16,9 @@ using namespace std;
 #define MICROSECOND 0.000001
 
 
-#define INTERVAL 1000*MICROSECOND
+#define INTERVAL 1000*MICROSECOND /*1 Mili*/
 #define START_TIME 3.0
+#define TIME_INTERVAL_FOR_OUTPUTS 0.5
 //#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
 //#define INSERTION_DELAY 2*MICROSECOND
 //#define EVICTION_DELAY 2*MICROSECOND
@@ -79,7 +80,8 @@ using namespace std;
 #define EVICTION_DELAY_PCK 11
 #define HUB_QUEUE_MSG 12
 #define HIST_MSG 13
-#define FLOW_COUNT_M 103
+#define INTERVAL_PCK 14
+#define LZY_EVICT 15
 
 
 
@@ -134,4 +136,5 @@ long long int get_sequence(const std::string& str);
 string get_parameter(vector<vector<string>> content,string key);
 vector<vector<string>> read_data_file(string fname);
 string my_to_string(long double x); // convert long double to string with precision level of 20 digits
+int rate_to_bin(long double rate);
 

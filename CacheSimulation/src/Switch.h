@@ -40,6 +40,7 @@ class Switch : public cSimpleModule
     std::map<uint64_t, elephant_struct> elephant_table;
     partition_rule* miss_table;
     int miss_table_size;
+    unsigned long int cache_size_t = 0;
     unsigned long int elephant_count; //Counter for sampling packets in RX
     unsigned long long int byte_count = 0;
     unsigned long long int byte_count_per_link[10] = {0};
@@ -50,6 +51,7 @@ class Switch : public cSimpleModule
     cOutVector misscount;
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
+    cHistogram cache_occupancy;
 
     //replace to par:
     int type;
@@ -80,6 +82,7 @@ class Switch : public cSimpleModule
     virtual int hash(uint64_t dest);
     virtual int hit_forward(uint64_t dest);
     virtual int internal_forwarding_port (InsertionPacket *msg);
+    virtual std::string which_switch_i_am();
 
 };
 

@@ -27,6 +27,7 @@ packet DataPacket
     uint64_t flow_size = 0;
     double rate;
     int first_packet = 0;
+    bool last_packet = false;
 }
 
 packet InsertionPacket
@@ -35,6 +36,7 @@ packet InsertionPacket
     int type; //Push or Pull //delete
     int switch_type; //ToR,Aggregation or controller switch
     int destination; //The switch id
+    int s;
 }
 
 packet Data_for_partition

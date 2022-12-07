@@ -30,9 +30,11 @@ namespace cachesimulation {
 class Controller : public cSimpleModule
 {
   private:
-    unsigned long long int packet_counter;
+    simtime_t processing_time_on_data_packet_in_controller;
+    unsigned long long int byte_counter;
     partition_rule* partition;
     int miss_table_size;
+    cHistogram bandwidth_hist;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

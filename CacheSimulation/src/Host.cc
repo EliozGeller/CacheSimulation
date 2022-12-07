@@ -24,7 +24,7 @@
 #include <string>
 
 
-
+simtime_t last_flow_a;
 
 
 
@@ -42,20 +42,15 @@ void Host::initialize()
     simtime_t start_time = (simtime_t)stold(par("flow_appearance").stdstringValue());
     EV << "start_time = " << start_time << endl;
 
-    //set maximum of id and last flow appearance:
+    //set maximum of last flow appearance:
     if(start_time > (simtime_t)stold(getParentModule()->par("last_flow_appearance").stdstringValue())){
         getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
     }
 
 
-    //later_start:
-    long double avg_flow_size = 4865995.738;
-    long double avg_rate = 2.5*1000000000;
-    simtime_t avg_transmination_time_of_flow = (long double)(avg_flow_size*8)/avg_rate + (((avg_flow_size > stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue())) ? 10 : 1) - 1)*inter_arrival_time_between_flowlets.dbl();
-    uint64_t n = (uint64_t)((START_TIME - start_time)/(avg_transmination_time_of_flow + inter_arrival_time_between_flows));
+    EV <<"last_flow_appearance = " << (simtime_t)stold(getParentModule()->par("last_flow_appearance").stdstringValue()) << endl;
+    //last_flow_a = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()));
 
-    simtime_t new_start_time = n*(avg_transmination_time_of_flow + inter_arrival_time_between_flows);
-    EV << "XXXX = "<< new_start_time << endl;
 
     start_flow(start_time);
 }
@@ -113,25 +108,6 @@ void Host::start_flow(simtime_t arrival_time){
     scheduleAt(arrival_time,message);
 }
 
-long double Host::draw_rate(int mean){
-    long double rate;
-    switch(mean){
-    case 40:
-        rate =  5 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
-        break;
-    case 400:
-        rate =  50 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
-        break;
-    case 4000:
-        rate =  500 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
-        break;
-    case 40000:
-        rate =  5000000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
-        break;
-    }
-    if(rate > 40000000000.0) rate = 40000000000.0;
-    return rate;
-}
 
 void Host::handleMessage(cMessage *message)
 {
@@ -146,39 +122,38 @@ void Host::handleMessage(cMessage *message)
    switch(message->getKind()){
         case GENERATEPACKET:
           {
-          //creat data packet:
-          if(simTime()>= START_TIME){
-              DataPacket *msg = new DataPacket("Data Packet");
-              msg->setKind(DATAPACKET);
-              msg->setDestination(destination);
-              std::string str_id = create_id(id,flowlet_count,sequence);
-              EV << "id = "<< str_id << endl;
-              msg->setId(str_id.c_str());
-              msg->setByteLength(size_packet);
-              msg->setFlow_size(flow_size);
-              msg->setRate(rate);
+              //creat data packet:
+                       if(simTime()>= START_TIME){
+                           DataPacket *msg = new DataPacket("Data Packet");
+                           msg->setKind(DATAPACKET);
+                           msg->setDestination(destination);
+                           std::string str_id = create_id(id,flowlet_count,sequence);
+                           EV << "id = "<< str_id << endl;
+                           msg->setId(str_id.c_str());
+                           msg->setByteLength(size_packet);
+                           msg->setFlow_size(flow_size);
+                           msg->setRate(rate);
 
-              msg->setFirst_packet(first_flag);
+                           msg->setFirst_packet(first_flag);
 
-              //send the data packet:
-              send(msg, "port$o", 0);
-          }
+                           //send the data packet:
+                           send(msg, "port$o", 0);
+                       }
 
-          //Checking whether the flow ends before the start of the time
-          else{
-              simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
-              if(((simTime() + transmination_time_of_flow) < START_TIME) && first){
-                  //flowlet_count = number_of_flowlet + 1;
-                  //flowlet_size = -1;
+                       //Checking whether the flow ends before the start of the time
+                       else{
+                           simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+                           if(((simTime() + transmination_time_of_flow) < START_TIME) && first){
+                               //flowlet_count = number_of_flowlet + 1;
+                               //flowlet_size = -1;
 
-                  simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
-                  getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
+                               simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
+                               getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
 
-                  start_flow(start_time);
-                  return;
-              }
-          }
-
+                               start_flow(start_time);
+                               return;
+                           }
+                       }
 
 
           //schedule the next packet or end the flow:
@@ -188,19 +163,6 @@ void Host::handleMessage(cMessage *message)
 
 
           if(flowlet_size < 0){
-              //send last message:
-              if(simTime()>= START_TIME){
-                  DataPacket *ma = new DataPacket("Data Packet");
-                  ma->setKind(DATAPACKET);
-                  std::string str_id1 = create_id(id,flowlet_count,sequence);
-                  ma->setId(str_id1.c_str());
-                  ma->setExternal_destination(1001);
-                  send(ma, "port$o", 0);
-              }
-
-              //end send last message
-
-
               flowlet_count++;
               if(flowlet_count >= number_of_flowlet){// end of flow:
                 //callFinish();
@@ -256,6 +218,27 @@ uint64_t Host::draw_flow_size(){
     }
 
     return 0;
+}
+
+
+long double Host::draw_rate(int mean){
+    long double rate;
+    switch(mean){
+    case 40:
+        rate =  5 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
+        break;
+    case 400:
+        rate =  50 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
+        break;
+    case 4000:
+        rate =  500 * 1000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
+        break;
+    case 40000:
+        rate =  5000000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
+        break;
+    }
+    if(rate > 40000000000.0) rate = 40000000000.0;
+    return rate;
 }
 
 

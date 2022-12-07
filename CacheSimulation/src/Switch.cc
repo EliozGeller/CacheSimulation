@@ -27,9 +27,16 @@ void Switch::initialize()
 
     //flow_count:
     flow_count_hist.setName("flow count");
-    cMessage *mmmm = new cMessage("flow_count");
-    mmmm->setKind(FLOW_COUNT_M);
-    scheduleAt(simTime() + START_TIME +INTERVAL,mmmm);
+
+    //new Histogram;
+    cMessage *hist_msg = new cMessage("hist_msg");
+    hist_msg->setKind(HIST_MSG);
+    scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
+
+    cMessage *m = new cMessage("flow_count");
+    m->setKind(INTERVAL_PCK);
+    scheduleAt(simTime() + START_TIME + INTERVAL,m);
+    //end new histogram
 
 
     //real start:
@@ -42,6 +49,7 @@ void Switch::initialize()
     insertion_delay = stold(getParentModule()->par("insertion_delay").stdstringValue());
     cache_percentage = stold(getParentModule()->par("cache_percentage").stdstringValue());
     cache_size = stoull(getParentModule()->par("cache_size").stdstringValue());
+    recordScalar("cache_size: ",cache_size);
     eviction_sample_size = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
     eviction_delay = stold(getParentModule()->par("eviction_delay").stdstringValue());
     flush_elephant_time = stold(getParentModule()->par("flush_elephant_time").stdstringValue());
@@ -89,76 +97,99 @@ void Switch::initialize()
         miss_table[0].port = 0;
     }
 
+    cache_occupancy.setName("cache_occupancy");
+
 
     //initialize Elephant process:
+    if(getParentModule()->par("run_elephant").boolValue()){
+        elephant_count = 0;
+        cMessage* m1 = new cMessage("Flush elephant timer");
+        cMessage* m2 = new cMessage("Check for elephant timer");
 
-/*
-    elephant_count = 0;
-    cMessage* m1 = new cMessage("Flush elephant timer");
-    cMessage* m2 = new cMessage("Check for elephant timer");
+        m1->setKind(FLUSH_ELEPHANT_PKT);
+        m2->setKind(CHECK_FOR_ELEPHANT_PKT);
 
-    m1->setKind(FLUSH_ELEPHANT_PKT);
-    m2->setKind(CHECK_FOR_ELEPHANT_PKT);
+        scheduleAt(simTime() + START_TIME ,m1);
+        scheduleAt(simTime() + START_TIME,m2);
+    }
 
-    scheduleAt(simTime() + START_TIME ,m1);
-    scheduleAt(simTime() + START_TIME,m2);
-    */
+
+    /*
+    cMessage* lzy_evict = new cMessage("Lazy eviction timer for insertion");
+    lzy_evict->setKind(LZY_EVICT);
+    scheduleAt(simTime() + START_TIME + 1000*MICROSECOND ,lzy_evict);
+*/
 
 }
 
 void Switch::handleMessage(cMessage *message)
 {
 
+    static int number_of_flows_which_ends_during_the_interval= 0;
     int egressPort;
     int kind_of_packet = message->getKind();
     int s;
     DataPacket *msg;
     InsertionPacket *pck,*m1,*m2;
 
-
-
     //flow_count:
     if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
         DataPacket *p = check_and_cast<DataPacket *>(message);
         flow_count.insert({get_flow(p->getId()),1});
+
+        //insert last message:
+        if(p->getLast_packet()){
+           flow_count.erase(get_flow(p->getId()));
+           //delete pkt;
+           number_of_flows_which_ends_during_the_interval++;
+           //return;
+        }
+        //
     }
-    if(message->getKind() == FLOW_COUNT_M){
-        flow_count_hist.collect(flow_count.size());
-        EV << "flow_count: "<< flow_count.size() << endl;
-        flow_count.clear();
+    if(kind_of_packet == INTERVAL_PCK){
+        flow_count_hist.collect(flow_count.size() + number_of_flows_which_ends_during_the_interval);
+        number_of_flows_which_ends_during_the_interval = 0;
+
+        cache_occupancy.collect((double)((double)(cache.size())/cache_size));
+        //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
+
+
+
         scheduleAt(simTime() + INTERVAL,message);
         return;
     }
     //end flow count
 
 
-
-    //miss count:
-    if(!strcmp(message->getName(),"miss count timer")){
-        misscount.record(((float)miss_packets)/(float)(miss_packets + hit_packets));
-        EV << " ggrtgrg = " << ((float)miss_packets)/(float)(miss_packets + hit_packets) << endl;
-        EV <<"miss_packets = " << miss_packets << ",hit_packets = " << hit_packets <<endl;
-        hit_packets = 0;
-        miss_packets = 0;
-        scheduleAt(simTime() + 0.001,message);
+    //histogram per 1 sec:
+    if(kind_of_packet == HIST_MSG){
+      string name =  "";
+      simtime_t t = simTime() - TIME_INTERVAL_FOR_OUTPUTS,t1 =  simTime();
+      name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
+      string name1 = name + ":flow_count";
+      flow_count_hist.recordAs(name1.c_str());
+      name1 = name + ":cache_occupancy";
+      cache_occupancy.recordAs(name1.c_str());
+      scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,message);
+      return;
     }
-    //end miss count
+    //end histogram per 1 s
 
 
     //byte count:
     if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
         msg = check_and_cast<DataPacket *>(message);
-           byte_count += msg->getByteLength();
-           int pport =  msg->getArrivalGate()->getIndex();
-           byte_count_per_link[pport] += msg->getByteLength();
-           if(msg->getExternal_destination() != 1){
-               before_hit_byte_count[pport] += msg->getByteLength();
-           }
-           else{
-               after_hit_byte_count[pport] += msg->getByteLength();
-           }
-           //end of byte_count
+        byte_count += msg->getByteLength();
+        int pport =  msg->getArrivalGate()->getIndex();
+        byte_count_per_link[pport] += msg->getByteLength();
+        if(msg->getExternal_destination() != 1){
+           before_hit_byte_count[pport] += msg->getByteLength();
+        }
+        else{
+           after_hit_byte_count[pport] += msg->getByteLength();
+        }
     }
+    //end of byte_count
 
 
     //RX:
@@ -227,35 +258,46 @@ void Switch::handleMessage(cMessage *message)
             pck = check_and_cast<InsertionPacket *>(message);
             if(!(pck->getSwitch_type() == type &&  pck->getDestination() == id)){ //If this switch is not the destination
                 egressPort = internal_forwarding_port(pck);
-                send(pck, "port$o", egressPort);
+                //send(pck, "port$o", egressPort);
+                sendDelayed(pck,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
                 break;
             }
             //break; //in purpose
         }
         case INSERTRULE_PUSH:
         {
+            //increment the cache size:
+            cache_size_t++;
+
+            //Schedule an insertion
             pck = check_and_cast<InsertionPacket *>(message);
             m1 = new InsertionPacket("Insertion delay packet");
             m1->setKind(INSERTION_DELAY_PCK);
             m1->setRule(pck->getRule()); //not necessary
             scheduleAt(simTime() + insertion_delay,m1);
 
-            if(cache.size() < cache_percentage * cache_size){
-                s = eviction_sample_size ;
-            }
-            else{
-                s = 1;
-            }
-            uint64_t rule_for_eviction = which_rule_to_evict(s);
 
-            m2 = new InsertionPacket("Eviction delay packet");
-            m2->setKind(EVICTION_DELAY_PCK);
-            m2->setRule(rule_for_eviction);
-            scheduleAt(simTime() + s*eviction_delay,m2);
+            if(cache_size_t >= 0.8 * cache_size){
+                if(cache_size_t < 0.9 * cache_size){
+                    s = eviction_sample_size ;
+                }
+                else {
+                    s = 1;
+                }
+                //uint64_t rule_for_eviction = which_rule_to_evict(s);
+
+                //Schedule an eviction
+                m2 = new InsertionPacket("Eviction delay packet");
+                m2->setKind(EVICTION_DELAY_PCK);
+                m2->setS(s);
+                scheduleAt(simTime() + s*eviction_delay,m2);
+
+            }
+
             delete pck;
             break; // end case
         }
-        case INSERTION_DELAY_PCK:
+        case INSERTION_DELAY_PCK://The real insertion:
         {
             pck = check_and_cast<InsertionPacket *>(message);
             ruleStruct new_rule;
@@ -265,10 +307,16 @@ void Switch::handleMessage(cMessage *message)
             delete pck;
             break; // end case
         }
-        case EVICTION_DELAY_PCK:
+        case EVICTION_DELAY_PCK: //The real eviction:
         {
             pck = check_and_cast<InsertionPacket *>(message);
-            cache.erase( pck->getRule()); // evict the rule
+            if(cache.size() >= 0.8 * cache_size){
+                uint64_t rule_for_eviction = which_rule_to_evict( pck->getS() /*s*/);
+                EV << "c = " << cache.size() << endl;
+                cache.erase(rule_for_eviction); // evict the rule
+                cache_size_t--;
+                EV << "c = " << cache.size() << endl;
+            }
             delete pck;
             break; // end case
 
@@ -292,7 +340,7 @@ void Switch::handleMessage(cMessage *message)
                     pck->setSwitch_type(type);
                     pck->setDestination(id);
                     egressPort = miss_table_search(it->first);
-                    send(pck, "port$o", egressPort);
+                    send(pck, "port$o", egressPort); //needed delay?
 
                 }
             }
@@ -307,13 +355,31 @@ void Switch::handleMessage(cMessage *message)
                 pck->setName("Insert rule Packet");
                 //The rule and the switch destination are already sets
                 egressPort = internal_forwarding_port(pck);
-                send(pck, "port$o", egressPort);
+                sendDelayed(pck,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
             }
             else { // forward the packet like a miss
                 egressPort = miss_table_search(pck->getDestination());
-                send(pck, "port$o", egressPort);
+                sendDelayed(pck,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
             }
             break; // end case
+        }
+        case LZY_EVICT:
+        {
+
+            if(cache.size() >= 0.9 * cache_size){
+                s = eviction_sample_size ;
+                uint64_t rule_for_eviction = which_rule_to_evict(s);
+
+                m2 = new InsertionPacket("Eviction delay packet");
+                m2->setKind(EVICTION_DELAY_PCK);
+                m2->setRule(rule_for_eviction);
+                scheduleAt(simTime() + s*eviction_delay,m2);
+
+            }
+
+
+            scheduleAt(simTime() + 1000*MICROSECOND ,message);
+            break;
         }
     }
 }
@@ -327,7 +393,7 @@ void Switch::fc_send(DataPacket *msg){
     conpacket->setKind(INSERTRULE_PUSH);
     conpacket->setRule(rule);
     cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
-    send(conpacket, "port$o", arrivalGate);
+    sendDelayed(conpacket,processing_time_on_data_packet_in_sw, "port$o", arrivalGate); //Model the processing time on a data packet
 }
 int Switch::cache_search(uint64_t rule){
     auto it = cache.find(rule);
@@ -378,12 +444,13 @@ uint64_t Switch::which_rule_to_evict(int s){
     uint64_t evicted_rule_key;
     simtime_t min = 1000000;
 
-    auto iter =  cache.begin();
+    //auto iter =  cache.begin();
 
     for(int i = 0;i < s;i++){
+        auto iter =  cache.begin();
         std::advance(iter,uniform(0, cache.size()));
         samples[i] = iter->first;
-        iter =  cache.begin();
+        //iter =  cache.begin();
     }
     for(int i = 0;i < s;i++){
         if(cache[samples[i]].last_time < min){
@@ -421,6 +488,23 @@ int Switch::hash(uint64_t dest){
     //return (int)uniform(1,num_of_agg + 1);
 }
 
+std::string Switch::which_switch_i_am(){
+    string s = "";
+    switch(type){
+    case TOR:
+        s = s + " ToR[" + to_string(id) + "] ";
+        break;
+    case AGGREGATION:
+        s = s + " Aggregation[" + to_string(id) + "] ";
+        break;
+    case CONTROLLERSWITCH:
+        s = s + " ControllerSwitch ";
+        break;
+    }
+
+    return s;
+}
+
 
 
 void Switch::finish(){
@@ -443,6 +527,7 @@ void Switch::finish(){
     EV  <<  endl;
 
     flow_count_hist.recordAs("flow count");
+    cache_occupancy.recordAs("cache_occupancy");
 }
 
 

@@ -32,6 +32,7 @@ namespace cachesimulation {
  *     uint64_t flow_size = 0;
  *     double rate;
  *     int first_packet = 0;
+ *     bool last_packet = false;
  * }
  * </pre>
  */
@@ -46,6 +47,7 @@ class DataPacket : public ::omnetpp::cPacket
     uint64_t flow_size;
     double rate;
     int first_packet;
+    bool last_packet;
 
   private:
     void copy(const DataPacket& other);
@@ -80,13 +82,15 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setRate(double rate);
     virtual int getFirst_packet() const;
     virtual void setFirst_packet(int first_packet);
+    virtual bool getLast_packet() const;
+    virtual void setLast_packet(bool last_packet);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:33</tt> by nedtool.
+ * Class generated from <tt>messages.msg:34</tt> by nedtool.
  * <pre>
  * packet InsertionPacket
  * {
@@ -94,6 +98,7 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.par
  *     int type; //Push or Pull //delete
  *     int switch_type; //ToR,Aggregation or controller switch
  *     int destination; //The switch id
+ *     int s;
  * }
  * </pre>
  */
@@ -104,6 +109,7 @@ class InsertionPacket : public ::omnetpp::cPacket
     int type;
     int switch_type;
     int destination;
+    int s;
 
   private:
     void copy(const InsertionPacket& other);
@@ -130,13 +136,15 @@ class InsertionPacket : public ::omnetpp::cPacket
     virtual void setSwitch_type(int switch_type);
     virtual int getDestination() const;
     virtual void setDestination(int destination);
+    virtual int getS() const;
+    virtual void setS(int s);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:41</tt> by nedtool.
+ * Class generated from <tt>messages.msg:43</tt> by nedtool.
  * <pre>
  * packet Data_for_partition
  * {
@@ -175,7 +183,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& o
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:46</tt> by nedtool.
+ * Class generated from <tt>messages.msg:48</tt> by nedtool.
  * <pre>
  * packet Partition_update_msg
  * {
