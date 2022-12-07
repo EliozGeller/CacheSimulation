@@ -78,7 +78,7 @@ void Controller::handleMessage(cMessage *message)
     switch(message->getKind()){
     case DATAPACKET:
         msg = check_and_cast<DataPacket *>(message);
-        byte_counter += msg->getBitLength();
+        byte_counter += msg->getByteLength();
         conpacket = new InsertionPacket("Insert rule Packet");
         conpacket->setKind(INSERTRULE_PUSH);
         conpacket->setRule(msg->getDestination());
@@ -109,18 +109,20 @@ void Controller::handleMessage(cMessage *message)
     }
     case INTERVAL_PCK:
     {
-        bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL*1000000000.0));
+        bandwidth_hist.collect(((long double)(byte_counter*8))/(long double)(INTERVAL*1000000000000.0));
         byte_counter = 0;
+
 
         scheduleAt(simTime() + INTERVAL,message);
         break;
     }
     case HIST_MSG:
     {
-        string name =  "";
+        string name1,name =  "";
         simtime_t t = simTime() - TIME_INTERVAL_FOR_OUTPUTS,t1 =  simTime();
         name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
-        bandwidth_hist.recordAs(name.c_str());
+        name1 = name + ":bandwidth_hist";
+        bandwidth_hist.recordAs(name1.c_str());
 
         scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,message);
         break;
@@ -262,7 +264,8 @@ void Controller::finish()
 
     delete[] partition;
 
-    recordScalar("Type: ", INTERVAL);
+    recordScalar("INTERVAL: ", INTERVAL);
+    bandwidth_hist.recordAs("Total_bandwidth_hist");
 }
 
 

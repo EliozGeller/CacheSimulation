@@ -64,7 +64,7 @@ void Destination::handleMessage(cMessage *message)
     case DATAPACKET:
     {
         DataPacket *msg = check_and_cast<DataPacket *>(message);
-        byte_counter += msg->getBitLength();
+        byte_counter += msg->getByteLength();
         EV <<" id = " <<msg->getId() << endl;
 
         //statistics for miss count
@@ -91,7 +91,7 @@ void Destination::handleMessage(cMessage *message)
     }
     case INTERVAL_PCK:
     {
-       bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL*1000000000.0));
+       bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL*1000000000000.0));
        byte_counter = 0;
 
        scheduleAt(simTime() + INTERVAL,message);
@@ -100,15 +100,18 @@ void Destination::handleMessage(cMessage *message)
     case HIST_MSG://histogram per 1 sec:
     {
         //handle bandwidth_hist:
-        string name =  "";
+        string name1,name =  "";
         simtime_t t = simTime() - TIME_INTERVAL_FOR_OUTPUTS,t1 =  simTime();
         name =  name + my_to_string(t.dbl()) + "  -  " + my_to_string(t1.dbl());
-        bandwidth_hist.recordAs(name.c_str());
+        name1 = name + ":bandwidth_hist";
+        bandwidth_hist.recordAs(name1.c_str());
 
 
         //handle miss count/out of order"
-        miss_count.recordAs(name.c_str());
-        out_of_order.recordAs(name.c_str());
+        name1 = name + ":miss_count";
+        miss_count.recordAs(name1.c_str());
+        name1 = name + ":out_of_order";
+        out_of_order.recordAs(name1.c_str());
 
         //print  maps:
         ofstream MyFile(dir + name + ".txt");

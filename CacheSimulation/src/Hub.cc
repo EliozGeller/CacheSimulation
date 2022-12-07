@@ -143,8 +143,8 @@ void Hub::handleMessage(cMessage *msg)
 
 
 
-        bandwidth_hist.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000.0));
-        bandwidth_hist_per_sec.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000.0));
+        bandwidth_hist.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000000.0));
+        bandwidth_hist_per_sec.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000000.0));
         window_byte_count = 0;
 
 
