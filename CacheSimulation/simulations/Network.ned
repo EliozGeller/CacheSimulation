@@ -74,6 +74,8 @@ network Network
         string last_flow_appearance;
         
         string output_file;
+        
+        bool run_elephant;
 
 
         //end simulation parameters

@@ -1,20 +1,19 @@
 version 2
-run General-0-20221127-12:52:06-14524
+run General-0-20221206-10:19:46-18304
 attr configname General
-attr datetime 20221127-12:52:06
+attr datetime 20221206-10:19:46
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 14524
+attr processid 18304
 attr repetition 0
 attr replication #0
 attr resultdir results
 attr runnumber 0
 attr seedset 0
-param Network.output_file "\"aa\""
 param Network.NumOfToRs 5
 param Network.NumOfAggregation 3
 param Network.rack[*].number_of_hosts 500
@@ -54,13 +53,359 @@ param Network.large_flow "\"\""
 param Network.last_flow_appearance "\"0\""
 param Network.rack[*].last_flow_appearance "\"0\""
 
-scalar Network.tor[0] "cache_size: " 1000
-scalar Network.tor[1] "cache_size: " 1000
-scalar Network.tor[2] "cache_size: " 1000
-scalar Network.tor[3] "cache_size: " 1000
-scalar Network.tor[4] "cache_size: " 1000
-scalar Network.agg[0] "cache_size: " 1000
-scalar Network.agg[1] "cache_size: " 1000
-scalar Network.agg[2] "cache_size: " 1000
-scalar Network.controllerswitch "cache_size: " 1000
+scalar Network.tor[0] "cache_size: " 100
+scalar Network.tor[1] "cache_size: " 100
+scalar Network.tor[2] "cache_size: " 100
+scalar Network.tor[3] "cache_size: " 100
+scalar Network.tor[4] "cache_size: " 100
+scalar Network.agg[0] "cache_size: " 100
+scalar Network.agg[1] "cache_size: " 100
+scalar Network.agg[2] "cache_size: " 100
+scalar Network.controllerswitch "cache_size: " 100
+scalar Network.dest "run_elephant: " 0
+scalar Network.controller "Type: " 0.001
+statistic Network.rack[0].hub "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.rack[0].hub "bandwidth hist"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.rack[0].hub "scalar: Total number of flows in the simulation:" 0
+statistic Network.rack[1].hub "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.rack[1].hub "bandwidth hist"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.rack[1].hub "scalar: Total number of flows in the simulation:" 1
+statistic Network.rack[2].hub "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.rack[2].hub "bandwidth hist"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.rack[2].hub "scalar: Total number of flows in the simulation:" 1
+statistic Network.rack[3].hub "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.rack[3].hub "bandwidth hist"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.rack[3].hub "scalar: Total number of flows in the simulation:" 1
+statistic Network.rack[4].hub "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.rack[4].hub "bandwidth hist"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.rack[4].hub "scalar: Total number of flows in the simulation:" 0
+scalar Network.tor[0] "Bandwidth: " 0
+statistic Network.tor[0] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.tor[0] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.tor[1] "Bandwidth: " 1078259925.6971
+statistic Network.tor[1] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.tor[1] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.tor[2] "Bandwidth: " 1078259925.6971
+statistic Network.tor[2] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.tor[2] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.tor[3] "Bandwidth: " 1078259925.6971
+statistic Network.tor[3] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.tor[3] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.tor[4] "Bandwidth: " 0
+statistic Network.tor[4] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.tor[4] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.agg[0] "Bandwidth: " 0
+statistic Network.agg[0] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.agg[0] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.agg[1] "Bandwidth: " 1078259925.6971
+statistic Network.agg[1] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.agg[1] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.agg[2] "Bandwidth: " 1078259925.6971
+statistic Network.agg[2] "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.agg[2] cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+scalar Network.controllerswitch "Bandwidth: " 4313039702.7884
+statistic Network.controllerswitch "flow count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.controllerswitch cache_occupancy
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.dest "miss count"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
+statistic Network.dest "out of order"
+field count 0
+field mean nan
+field stddev nan
+field min nan
+field max nan
+field sum 0
+field sqrsum 0
+bin	-inf	0
+bin	0	0
+bin	1	0
 
