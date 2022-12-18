@@ -38,20 +38,28 @@ class Switch : public cSimpleModule
     uint64_t policy_size;
     std::map<uint64_t, ruleStruct> cache;
     std::map<uint64_t, elephant_struct> elephant_table;
+    int elephant_table_size = 0;
+    int elephant_table_max_size;
     partition_rule* miss_table;
     int miss_table_size;
     unsigned long int cache_size_t = 0;
     unsigned long int elephant_count; //Counter for sampling packets in RX
     unsigned long long int byte_count = 0;
-    unsigned long long int byte_count_per_link[10] = {0};
-    unsigned long long int before_hit_byte_count[10] = {0};
-    unsigned long long int after_hit_byte_count[10] = {0};
+    unsigned long long int byte_count_per_link[100] = {0};
+    unsigned long long int before_hit_byte_count[100] = {0};
+    unsigned long long int after_hit_byte_count[100] = {0};
     unsigned long long int hit_packets = 0;
     unsigned long long int miss_packets = 0;
     cOutVector misscount;
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
     cHistogram cache_occupancy;
+
+
+    unsigned long long int insertion_count_push = 0;
+    unsigned long long int insertion_count_pull = 0;
+    cHistogram insertion_count;
+    cHistogram bandwidth_data;
 
     //replace to par:
     int type;

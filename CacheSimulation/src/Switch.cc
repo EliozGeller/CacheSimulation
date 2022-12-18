@@ -28,6 +28,9 @@ void Switch::initialize()
     //flow_count:
     flow_count_hist.setName("flow count");
 
+    //insertion_count:
+    insertion_count.setName("insertion_count");
+
     //new Histogram;
     cMessage *hist_msg = new cMessage("hist_msg");
     hist_msg->setKind(HIST_MSG);
@@ -54,7 +57,8 @@ void Switch::initialize()
     eviction_delay = stold(getParentModule()->par("eviction_delay").stdstringValue());
     flush_elephant_time = stold(getParentModule()->par("flush_elephant_time").stdstringValue());
     check_for_elephant_time = stold(getParentModule()->par("check_for_elephant_time").stdstringValue());
-    num_of_agg = (int)(getParentModule()->par("NumOfAggregation"));
+    elephant_table_max_size = stoi(getParentModule()->par("elephant_table_size").stdstringValue());
+    num_of_agg = (int)(getParentModule()->par(  "NumOfAggregation"));
     //end of par
     byte_count = 0;
     for(int i = 0; i < 10;i++){
@@ -72,6 +76,7 @@ void Switch::initialize()
         par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
     }
     threshold = (int)par("threshold");
+    recordScalar("push threshold: ",threshold);
     if(type == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
         miss_table = new partition_rule[miss_table_size];
@@ -101,7 +106,7 @@ void Switch::initialize()
 
 
     //initialize Elephant process:
-    if(getParentModule()->par("run_elephant").boolValue()){
+    if(getParentModule()->par("run_elephant").boolValue() && type == TOR){
         elephant_count = 0;
         cMessage* m1 = new cMessage("Flush elephant timer");
         cMessage* m2 = new cMessage("Check for elephant timer");
@@ -132,20 +137,36 @@ void Switch::handleMessage(cMessage *message)
     DataPacket *msg;
     InsertionPacket *pck,*m1,*m2;
 
-    //flow_count:
+    //flow_count and byte_count:
     if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
-        DataPacket *p = check_and_cast<DataPacket *>(message);
-        flow_count.insert({get_flow(p->getId()),1});
+        msg = check_and_cast<DataPacket *>(message);
+        flow_count.insert({get_flow(msg->getId()),1});
 
         //insert last message:
-        if(p->getLast_packet()){
-           flow_count.erase(get_flow(p->getId()));
+        if(msg->getLast_packet()){
+           flow_count.erase(get_flow(msg->getId()));
            //delete pkt;
            number_of_flows_which_ends_during_the_interval++;
            //return;
         }
-        //
+
+
+
+
+        //byte_count:
+        byte_count += msg->getByteLength();
+        int pport =  msg->getArrivalGate()->getIndex();
+        byte_count_per_link[pport] += msg->getByteLength();
+        if(msg->getExternal_destination() != 1){
+           before_hit_byte_count[pport] += msg->getByteLength();
+        }
+        else{
+           after_hit_byte_count[pport] += msg->getByteLength();
+        }
     }
+
+
+
     if(kind_of_packet == INTERVAL_PCK){
         flow_count_hist.collect(flow_count.size() + number_of_flows_which_ends_during_the_interval);
         number_of_flows_which_ends_during_the_interval = 0;
@@ -153,7 +174,9 @@ void Switch::handleMessage(cMessage *message)
         cache_occupancy.collect((double)((double)(cache.size())/cache_size));
         //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
 
-
+        insertion_count.collect(((insertion_count_pull + insertion_count_push) ?((long double)(insertion_count_pull))/((long double)(insertion_count_pull + insertion_count_push)) : 0));
+        insertion_count_push = 0;
+        insertion_count_pull = 0;
 
         scheduleAt(simTime() + INTERVAL,message);
         return;
@@ -170,31 +193,26 @@ void Switch::handleMessage(cMessage *message)
       flow_count_hist.recordAs(name1.c_str());
       name1 = name + ":cache_occupancy";
       cache_occupancy.recordAs(name1.c_str());
+      name1 = name + ":insertion_count";
+      insertion_count.recordAs(name1.c_str());
+
+      recordScalar("Bandwidth: ", (long double)(byte_count*8)/(simTime().dbl() - START_TIME));
       scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,message);
       return;
     }
     //end histogram per 1 s
 
 
-    //byte count:
-    if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
-        msg = check_and_cast<DataPacket *>(message);
-        byte_count += msg->getByteLength();
-        int pport =  msg->getArrivalGate()->getIndex();
-        byte_count_per_link[pport] += msg->getByteLength();
-        if(msg->getExternal_destination() != 1){
-           before_hit_byte_count[pport] += msg->getByteLength();
-        }
-        else{
-           after_hit_byte_count[pport] += msg->getByteLength();
-        }
-    }
-    //end of byte_count
+
+
+
+
+
 
 
     //RX:
     //Elephant Detector:
-    if(type == TOR && kind_of_packet == DATAPACKET){ // Act only if this is a Data packet in the ToR
+    if(type == TOR && kind_of_packet == DATAPACKET && (elephant_count % elephant_sample_rx == 0)){ // Act only if this is a Data packet in the ToR
         msg = check_and_cast<DataPacket *>(message);
 
 
@@ -206,7 +224,8 @@ void Switch::handleMessage(cMessage *message)
         }
         else {
             elephant_count++;
-            if(elephant_count % elephant_sample_rx == 0){ //Every few packets we will sample a packet in RX
+            if( elephant_table_size <= elephant_table_max_size){ //Every few packets we will sample a packet in RX
+               elephant_table_size++;
                elephant_struct new_pkt;
                //new_pkt.byte_count = 0;
                new_pkt.count = 0;
@@ -223,7 +242,6 @@ void Switch::handleMessage(cMessage *message)
 
 
     //TX:
-    EV << "kind = "<< kind_of_packet<<endl;
     switch(kind_of_packet){
         case DATAPACKET:
         case HITPACKET:
@@ -266,6 +284,15 @@ void Switch::handleMessage(cMessage *message)
         }
         case INSERTRULE_PUSH:
         {
+
+            //statics:
+
+           if(kind_of_packet == INSERTRULE_PULL){
+               insertion_count_pull++;
+           }
+           else {
+               insertion_count_push++;
+           }
             //increment the cache size:
             cache_size_t++;
 
@@ -312,10 +339,8 @@ void Switch::handleMessage(cMessage *message)
             pck = check_and_cast<InsertionPacket *>(message);
             if(cache.size() >= 0.8 * cache_size){
                 uint64_t rule_for_eviction = which_rule_to_evict( pck->getS() /*s*/);
-                EV << "c = " << cache.size() << endl;
                 cache.erase(rule_for_eviction); // evict the rule
                 cache_size_t--;
-                EV << "c = " << cache.size() << endl;
             }
             delete pck;
             break; // end case
@@ -324,13 +349,15 @@ void Switch::handleMessage(cMessage *message)
         case FLUSH_ELEPHANT_PKT:
         {
             elephant_table.clear(); //clear the elephant_table
+            elephant_count = 0;
+            elephant_table_size = 0;
             scheduleAt(simTime() + flush_elephant_time,message);
             break; // end case
         }
         case CHECK_FOR_ELEPHANT_PKT:
         {
             for (std::map<uint64_t, elephant_struct>::iterator it=elephant_table.begin(); it!=elephant_table.end(); ++it){
-                if((it->second).count/(simTime() - (it->second).first_appearance) > bandwidth_elephant_threshold && /*(simTime() - (it->second).last_time) > already_requested_threshold &&*/ (cache.count(it->first)) == 0){
+                if((it->second).count >= bandwidth_elephant_threshold &&  (cache.count(it->first)) == 0 /* &&(simTime() - (it->second).last_time) > already_requested_threshold */){
                     //If the bandwidth of this flow is greater than a certain threshold and also that it has not been requested recently and also is not in the cache
                     //send request pkt:
                     pck = new InsertionPacket("Request for a rule");
@@ -517,7 +544,7 @@ void Switch::finish(){
 
     EV<< s << " " << id << ":" << endl;
     EV << "Bandwidth: " << (long double)(byte_count*8)/simTime().dbl() << " bps" <<  endl;
-    recordScalar("Bandwidth: ", (long double)(byte_count*8)/simTime().dbl());
+    recordScalar("Bandwidth: ", (long double)(byte_count*8)/(simTime().dbl() - START_TIME));
     for(int i = 0;i < 10;i++){
         if(byte_count_per_link[i])EV << "Bandwidth on link " << i << " is  " << abs(8*byte_count_per_link[i]/simTime()) << " bps" <<  endl;
         if(before_hit_byte_count[i])EV << "Bandwidth of packets before hit on link " << i << " is  " << abs(8*before_hit_byte_count[i]/simTime()) << " bps" <<  endl;
