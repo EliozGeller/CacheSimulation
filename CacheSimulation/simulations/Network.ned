@@ -69,13 +69,19 @@ network Network
         string inter_arrival_time_between_flowlets;
         string inter_arrival_time_between_flows;
         string large_flow;
-        
+
         //creation of new flow:
         string last_flow_appearance;
-        
+
         string output_file;
-        
+
         bool run_elephant;
+        bool run_push;
+
+        bool record_traffic;
+        bool create_offline_traffic;
+        
+        int x;
 
 
         //end simulation parameters
@@ -84,7 +90,7 @@ network Network
         {
             delay = 0.1 us; //micros
         }
-        
+
         channel rate_ch extends ned.DatarateChannel
         {
             datarate = 1.6 Tbps;
@@ -107,7 +113,7 @@ network Network
             @display("p=254,349;i=device/switch");
         }
         dest: Destination {
-            @display("p=363,130;i=abstract/penguin");
+            @display("p=363,130;i=abstract/penguin;is=vl");
         }
     connections:
         for i=0..NumOfToRs-1 {
