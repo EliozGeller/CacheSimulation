@@ -16,9 +16,15 @@
 #ifndef __CACHESIMULATION_TCX_H
 #define __CACHESIMULATION_TCX_H
 
+#include <chrono>
+#include <iostream>
+#include <unistd.h>
+
+
 #include <omnetpp.h>
 #include <map>
 #include "messages_m.h"
+
 
 using namespace omnetpp;
 
@@ -38,6 +44,9 @@ class Destination : public cSimpleModule
     std::map<std::string, long long int> expected_sequence;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  miss_count_map;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  out_of_order_map;
+
+    //measure time:
+    std::chrono::time_point<std::chrono::steady_clock> start;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

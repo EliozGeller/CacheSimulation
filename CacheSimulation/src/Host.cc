@@ -35,8 +35,39 @@ Define_Module(Host);
 void Host::initialize()
 {
 
+
+    //Read the distribution file:
+    vector<vector<string>> size_distribution_file_string = read_data_file(PATH_DISTRIBUTION);
+    for(int i = 1 /*start from the second row*/;i < size_distribution_file_string.size();i++){
+        vector<long double> row;
+        row.push_back(stoull(size_distribution_file_string[i][0]));
+        row.push_back(stold(size_distribution_file_string[i][1]));
+        size_distribution_file.push_back(row);
+    }
+    vector_distribution_file_size = size_distribution_file.size();
+
+    //calculate the average_flow_size:
+    uint64_t average_flow_size = 0;
+    for(int i = 1 /* begin from the second row in order to calculate */; i < vector_distribution_file_size;i++){
+        average_flow_size += (size_distribution_file[i][1] - size_distribution_file[i - 1][1]) * size_distribution_file[i][0];
+    }
+
+    EV << "average_flow_size = " << average_flow_size << endl;
+
+    //set the inter_arrival_time_between_flows:
+    inter_arrival_time_between_flows = (simtime_t)((long double)(average_flow_size * 8)/((long double)(1600000000000))); // need to read from the file
+
+
+    //if we create traffic from file, there is no need for Host:
+    if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
+        return;
+    }
+
+
     inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
-    inter_arrival_time_between_flows = (simtime_t)stold(getParentModule()->getParentModule()->par("inter_arrival_time_between_flows").stdstringValue());
+
+    policy_size =  stoull(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
+    large_flow = stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue()); /*100 Mbyte*/
 
 
     simtime_t start_time = (simtime_t)stold(par("flow_appearance").stdstringValue());
@@ -48,9 +79,17 @@ void Host::initialize()
     }
 
 
-    EV <<"last_flow_appearance = " << (simtime_t)stold(getParentModule()->par("last_flow_appearance").stdstringValue()) << endl;
-    //last_flow_a = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()));
 
+
+    //set the sub-net bounds of the destination:
+    subnet_size = 5000;
+    lower_bound_of_subnet = 1;//uniform(1,policy_size - subnet_size);
+    higher_bound_of_subnet = min(lower_bound_of_subnet + subnet_size,policy_size);
+
+
+    cMessage *pck = new cMessage("Set bounds to hosts");
+    pck->setKind(BOUNDS_IN_HOSTS_PCK);
+    scheduleAt(simTime() + START_TIME + 0.001,pck);
 
     start_flow(start_time);
 }
@@ -61,31 +100,28 @@ void Host::start_flow(simtime_t arrival_time){
     first = true;
     sequence = 0;
     id = getSimulation()->getUniqueNumber();
-    EV <<"Start flow!!" << endl;
-    EV << "id in rack "<<  getParentModule()->getIndex() << " in Host "<< getIndex() << " is " << id << endl;
-    //flow_size = stoull(par("flow_size").stdstringValue());
-    flow_size = draw_flow_size();
-    if(arrival_time == 0.0)flow_size = 0.5*flow_size;
-    //flow_size = 100000;
-    uint64_t policy_size =  stoull(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
-    destination = (uint64_t)uniform(1,policy_size); //change
+    //flow_size = draw_flow_size();
+    //rate = draw_rate(4000);
 
-    //inter_arrival_time_between_packets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_packets").stdstringValue());//real one
 
-    //test:
-    rate = draw_rate(4000);
-    //long double rate = 500000000*pow(1.0/(1.0 - uniform(0,1)),1.0 / 1.0256410256410255);
 
+    //
+
+    if(uniform(0,100) <= 0.2 )flow_size = 10000 * 1500;
+    else flow_size = 100 * 1500;
+    rate = 120000000000;
+    //
+
+
+    destination = (uint64_t)uniform(lower_bound_of_subnet,higher_bound_of_subnet);
     inter_arrival_time_between_packets = (simtime_t)((1500.0*8.0)/rate);
-    EV << "Rate = "<< rate << " bps" << endl;
-    //end test
 
 
-    EV << "inter_arrival_time_between_packets = "<< inter_arrival_time_between_packets << endl;
-    EV << "inter_arrival_time_between_flowlets = "<< inter_arrival_time_between_flowlets << endl;
 
 
-    if(flow_size > stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue()) /*100 Mbyte*/){
+
+
+    if(flow_size > large_flow){
         number_of_flowlet = 10;
     }
     else {
@@ -99,12 +135,6 @@ void Host::start_flow(simtime_t arrival_time){
     genpack = message;
     message->setKind(GENERATEPACKET);
 
-
-
-    EV << "id = "<< id << endl;
-    EV << "arrival_time = "<< arrival_time << endl;
-    EV << "flow_size = "<< flow_size << endl;
-    EV << "flowlet_size = "<< flowlet_size << endl;
     scheduleAt(arrival_time,message);
 }
 
@@ -113,47 +143,50 @@ void Host::handleMessage(cMessage *message)
 {
     int first_flag = 0,size_packet = 1500;
 
-    if(first){
-          first_flag = 1;
-          first = false;
-    }
+
 
    simtime_t arrival_time;
    switch(message->getKind()){
         case GENERATEPACKET:
           {
-              //creat data packet:
-                       if(simTime()>= START_TIME){
-                           DataPacket *msg = new DataPacket("Data Packet");
-                           msg->setKind(DATAPACKET);
-                           msg->setDestination(destination);
-                           std::string str_id = create_id(id,flowlet_count,sequence);
-                           EV << "id = "<< str_id << endl;
-                           msg->setId(str_id.c_str());
-                           msg->setByteLength(size_packet);
-                           msg->setFlow_size(flow_size);
-                           msg->setRate(rate);
+              //mark the first packet in the flow:
+              if(first){
+                first_flag = 1;
+                first = false;
+              }
+            //creat data packet:
+            if(simTime()>= START_TIME){
+               DataPacket *msg = new DataPacket("Data Packet");
+               msg->setKind(DATAPACKET);
+               msg->setDestination(destination);
+               std::string str_id = create_id(id,flowlet_count,sequence);
+               EV << "id = "<< str_id << endl;
+               msg->setId(str_id.c_str());
+               msg->setByteLength(size_packet);
+               msg->setFlow_size(flow_size);
+               msg->setRate(rate);
 
-                           msg->setFirst_packet(first_flag);
+               msg->setFirst_packet(first_flag);
+               if(flowlet_size <= size_packet)msg->setLast_packet(true);
 
-                           //send the data packet:
-                           send(msg, "port$o", 0);
-                       }
+               //send the data packet:
+               send(msg, "port$o", 0);
+            }
 
-                       //Checking whether the flow ends before the start of the time
-                       else{
-                           simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
-                           if(((simTime() + transmination_time_of_flow) < START_TIME) && first){
-                               //flowlet_count = number_of_flowlet + 1;
-                               //flowlet_size = -1;
+            //Checking whether the flow ends before the start of the time
+            else{
+               simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+               if(((simTime() + transmination_time_of_flow) < START_TIME) && first){
+                   //flowlet_count = number_of_flowlet + 1;
+                   //flowlet_size = -1;
 
-                               simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
-                               getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
+                   simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
+                   getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
 
-                               start_flow(start_time);
-                               return;
-                           }
-                       }
+                   start_flow(start_time);
+                   return;
+               }
+            }
 
 
           //schedule the next packet or end the flow:
@@ -165,11 +198,6 @@ void Host::handleMessage(cMessage *message)
           if(flowlet_size < 0){
               flowlet_count++;
               if(flowlet_count >= number_of_flowlet){// end of flow:
-                //callFinish();
-                //deleteModule();
-
-
-
                 //strat new flow:
                 simtime_t start_time = (simtime_t)(stold(getParentModule()->par("last_flow_appearance").stdstringValue()) + exponential(inter_arrival_time_between_flows));
                 getParentModule()->par("last_flow_appearance").setStringValue(my_to_string(start_time.dbl()));
@@ -199,6 +227,15 @@ void Host::handleMessage(cMessage *message)
 
           break;
           }//end case
+        case BOUNDS_IN_HOSTS_PCK:
+        {
+            lower_bound_of_subnet = (higher_bound_of_subnet + 1)%policy_size;
+            higher_bound_of_subnet = min(lower_bound_of_subnet + subnet_size,policy_size);
+
+
+            scheduleAt(simTime() + 0.001,message);
+            break;
+        }
     }
 }
 
@@ -207,13 +244,11 @@ uint64_t Host::draw_flow_size(){
      * Here there is an option to check each row whether it is float or not,
      *  but right now it is just searching starting from the second row
      */
-    vector<vector<string>> size_distribution_file = read_data_file(PATH_DISTRIBUTION);
-
 
     float x = uniform(0,1);
-    for(int i = 1 /*start from the second row*/;i < size_distribution_file.size();i++){ //
-        if(x <= stold(size_distribution_file[i][1])){
-            return (uint64_t)stoull(size_distribution_file[i][0]);
+    for(int i = 1 /*start from the second row*/;i < vector_distribution_file_size;i++){ //
+        if(x <= size_distribution_file[i][1]){
+            return (uint64_t)size_distribution_file[i][0];
         }
     }
 

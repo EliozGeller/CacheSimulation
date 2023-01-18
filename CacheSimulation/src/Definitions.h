@@ -16,8 +16,8 @@ using namespace std;
 #define MICROSECOND 0.000001
 
 
-#define INTERVAL 1000*MICROSECOND /*1 Mili*/
-#define START_TIME 3.0
+#define INTERVAL 50*MICROSECOND /*1 Mili*/
+#define START_TIME 5.0
 #define TIME_INTERVAL_FOR_OUTPUTS 0.5
 //#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
 //#define INSERTION_DELAY 2*MICROSECOND
@@ -60,7 +60,8 @@ using namespace std;
 
 //Json file:
 #define PATH "traces/packet_trace"  // The path suffix (".json") is added in the code
-#define PATH_DISTRIBUTION "size_distribution/FB_Hadoop_Inter_Rack_FlowCDF.csv"
+//#define PATH_DISTRIBUTION "size_distribution/FB_Hadoop_Inter_Rack_FlowCDF.csv"
+#define PATH_DISTRIBUTION "size_distribution/i-websearch.csv"
 #define PATH_DATA "data/data.csv"
 
 
@@ -82,6 +83,8 @@ using namespace std;
 #define HIST_MSG 13
 #define INTERVAL_PCK 14
 #define LZY_EVICT 15
+#define RECORD_OR_CREATE_TRAFFIC_PCK 16
+#define BOUNDS_IN_HOSTS_PCK 17
 
 
 
@@ -114,6 +117,8 @@ typedef struct{
     unsigned long int byte_count; //necessary?
     simtime_t last_time;
     simtime_t first_appearance;
+    int flow_size;
+    long double rate;
 }elephant_struct;
 
 //Struct of partition rule for the miss table:
@@ -137,4 +142,7 @@ string get_parameter(vector<vector<string>> content,string key);
 vector<vector<string>> read_data_file(string fname);
 string my_to_string(long double x); // convert long double to string with precision level of 20 digits
 int rate_to_bin(long double rate);
+int sign(double x);
+std::string mysplitstring(std::string str,std::string delimiter,int position_of_word);
+void convert_xl_to_csv();
 

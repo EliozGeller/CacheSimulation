@@ -50,16 +50,29 @@ class Switch : public cSimpleModule
     unsigned long long int after_hit_byte_count[100] = {0};
     unsigned long long int hit_packets = 0;
     unsigned long long int miss_packets = 0;
+    double last_hit_ratio = 787;//positive mean step to the right and negative mean step to the left
+    cOutVector best_flow_size;
     cOutVector misscount;
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
     cHistogram cache_occupancy;
+    cHistogram number_of_insertions;
+
+    int index_flow_size = 0;//delete
+    int sizes[16] = {1177 , 4264 , 15443 , 28000 , 37323 , 51067 , 74908 , 93293 ,
+            141819 , 237853 , 573344 , 2076744 , 7521945 , 27244995 , 98686787 ,
+             223092956}; //delete
 
 
     unsigned long long int insertion_count_push = 0;
     unsigned long long int insertion_count_pull = 0;
     cHistogram insertion_count;
     cHistogram bandwidth_data;
+
+
+    //flow count:
+    cHistogram flow_count_hist;
+    std::map<string, int> flow_count;
 
     //replace to par:
     int type;
@@ -72,18 +85,15 @@ class Switch : public cSimpleModule
     long double eviction_delay;
     long double flush_elephant_time;
     long double check_for_elephant_time;
-    int threshold;
+    unsigned long long threshold;
     int num_of_agg;
 
-
-    //flow count:
-    cHistogram flow_count_hist;
-    std::map<string, int> flow_count;
+;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
-    virtual int cache_search(uint64_t rule);
+    virtual int cache_search(DataPacket *msg);
     virtual int miss_table_search(uint64_t rule);
     virtual uint64_t which_rule_to_evict(int s);
     virtual void fc_send(DataPacket *msg);

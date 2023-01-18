@@ -23,6 +23,20 @@ Define_Module(Controller);
 void Controller::initialize()
 {
 
+
+    //
+   // getEnvir()->setVectorAttribute(vechandle, name, value)
+    //
+
+
+
+    //
+    convert_xl_to_csv();
+
+    //
+
+
+
     //set all parameters from csv file;
     set_all_parameters();
     initialization_start_time_for_flows();
@@ -140,8 +154,10 @@ void Controller::set_all_parameters(){
     s = get_parameter(data_file,"Policy size");
     getParentModule()->par("policy_size").setStringValue(s);
 
-    s = get_parameter(data_file,"Cache size");
-    getParentModule()->par("cache_size").setStringValue(s);
+    if(getParentModule()->par("cache_size").stdstringValue() == ""){
+        s = get_parameter(data_file,"Cache size");
+        getParentModule()->par("cache_size").setStringValue(s);
+    }
 
     s = get_parameter(data_file,"Propagation");
     getParentModule()->par("propagation_time").setStringValue(s);
@@ -170,17 +186,25 @@ void Controller::set_all_parameters(){
     s = get_parameter(data_file,"Sample rate");
     getParentModule()->par("elephant_sample_rx").setStringValue(s);
 
-    s = get_parameter(data_file,"Bandwidth threshold");
-    getParentModule()->par("bandwidth_elephant_threshold").setStringValue(s);
+    if(getParentModule()->par("bandwidth_elephant_threshold").stdstringValue() == ""){
+        s = get_parameter(data_file,"Bandwidth threshold");
+        getParentModule()->par("bandwidth_elephant_threshold").setStringValue(s);
+    }
 
     s = get_parameter(data_file,"Timestamp threshold");
     getParentModule()->par("already_requested_threshold").setStringValue(s);
 
-    s = get_parameter(data_file,"Threshold in aggregation");
-    getParentModule()->par("push_threshold_in_aggregation").setStringValue(s);
 
-    s = get_parameter(data_file,"Threshold in controller switch");
-    getParentModule()->par("push_threshold_in_controller_switch").setStringValue(s);
+    if(getParentModule()->par("push_threshold_in_aggregation").stdstringValue() == ""){
+        s = get_parameter(data_file,"Threshold in aggregation");
+        getParentModule()->par("push_threshold_in_aggregation").setStringValue(s);
+    }
+
+    if(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue() == ""){
+        s = get_parameter(data_file,"Threshold in controller switch");
+        getParentModule()->par("push_threshold_in_controller_switch").setStringValue(s);
+    }
+
 
     s = get_parameter(data_file,"Cache percentage");
     getParentModule()->par("cache_percentage").setStringValue(s);

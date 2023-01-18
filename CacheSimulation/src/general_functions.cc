@@ -48,6 +48,7 @@ string get_parameter(vector<vector<string>> content,string key){
     for(int i = 0;i < content.size();i++){
         if(content[i][0] == key)return content[i][10];
     }
+    return "";
 }
 
 
@@ -96,4 +97,54 @@ string my_to_string(long double x){
 
 int rate_to_bin(long double rate){
     return (int)((rate)/(100000000.0));
+}
+
+int sign(double x){
+    return (x >= 0)?(1):(-1);
+}
+
+std::string mysplitstring(std::string str,std::string delimiter,int position_of_word){
+    std::string result;
+    int pos =  0;
+
+    for(int i = 0;i < position_of_word;i++){
+        pos = str.find(delimiter,pos + 1);
+    }
+    int last_pos = str.find(delimiter,pos + 1);
+
+    if(pos == 0)result = str.substr(pos,last_pos-pos);
+    else result = str.substr(pos + 1,last_pos-pos - 1);
+
+    return result;
+
+}
+
+
+void convert_xl_to_csv() {
+    // Open the .xlsx file for reading
+    ifstream xlsxFile("data/data.csv");
+
+    // Open the .csv file for writing
+    ofstream csvFile("bbb.csv", std::ios::trunc);
+
+    // Read each line of the .xlsx file
+    string line;
+    while (getline(xlsxFile, line)) {
+        // Split the line into cells using the comma delimiter
+        size_t pos = 0;
+        string cell;
+        while ((pos = line.find(',')) != string::npos) {
+            cell = line.substr(0, pos);
+            // Write the cell to the .csv file
+            csvFile << cell << ",";
+            // Remove the cell from the line
+            line.erase(0, pos + 1);
+        }
+        // Write the last cell in the line to the .csv file
+        csvFile << line << endl;
+    }
+
+    // Close the .xlsx and .csv files
+    xlsxFile.close();
+    csvFile.close();
 }

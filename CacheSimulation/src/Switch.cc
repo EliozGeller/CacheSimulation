@@ -15,11 +15,11 @@
 
 #include "Switch.h"
 #include <math.h>
+#include <fstream>
 
 namespace cachesimulation {
 
 Define_Module(Switch);
-
 
 
 void Switch::initialize()
@@ -31,18 +31,9 @@ void Switch::initialize()
     //insertion_count:
     insertion_count.setName("insertion_count");
 
-    //new Histogram;
-    cMessage *hist_msg = new cMessage("hist_msg");
-    hist_msg->setKind(HIST_MSG);
-    scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
+    best_flow_size.setName("best_flow_size");
 
-    cMessage *m = new cMessage("flow_count");
-    m->setKind(INTERVAL_PCK);
-    scheduleAt(simTime() + START_TIME + INTERVAL,m);
-    //end new histogram
-
-
-    //real start:
+    //set id:
     id = getIndex();
 
     //start of par:
@@ -68,6 +59,7 @@ void Switch::initialize()
     }
     policy_size = stoull(getParentModule()->par("policy_size").stdstringValue());
     bandwidth_elephant_threshold = stoull(getParentModule()->par("bandwidth_elephant_threshold").stdstringValue());
+    EV << "bandwidth_elephant_threshold = " << bandwidth_elephant_threshold << endl;
     already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
     if(par("Type").intValue() == AGGREGATION){
         par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
@@ -104,6 +96,23 @@ void Switch::initialize()
 
     cache_occupancy.setName("cache_occupancy");
 
+    //Schedule events:
+    //new Histogram;
+    cMessage *hist_msg = new cMessage("hist_msg");
+    hist_msg->setKind(HIST_MSG);
+    scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
+
+    cMessage *m = new cMessage("flow_count");
+    m->setKind(INTERVAL_PCK);
+    scheduleAt(simTime() + START_TIME + INTERVAL,m);
+    //end new histogram
+
+
+
+    //initialize Push process:
+    if(!getParentModule()->par("run_push").boolValue()){
+        threshold = (unsigned long long)(-1) ;//will set infinity
+    }
 
     //initialize Elephant process:
     if(getParentModule()->par("run_elephant").boolValue() && type == TOR){
@@ -174,6 +183,7 @@ void Switch::handleMessage(cMessage *message)
         cache_occupancy.collect((double)((double)(cache.size())/cache_size));
         //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
 
+        number_of_insertions.collect(insertion_count_pull + insertion_count_push);
         insertion_count.collect(((insertion_count_pull + insertion_count_push) ?((long double)(insertion_count_pull))/((long double)(insertion_count_pull + insertion_count_push)) : 0));
         insertion_count_push = 0;
         insertion_count_pull = 0;
@@ -195,8 +205,17 @@ void Switch::handleMessage(cMessage *message)
       cache_occupancy.recordAs(name1.c_str());
       name1 = name + ":insertion_count";
       insertion_count.recordAs(name1.c_str());
+      name1 = name + ":number_of_insertions";
+      number_of_insertions.recordAs(name1.c_str());
+      name1 = name + ":best_flow_size";
+      recordScalar(name1.c_str(),sizes[index_flow_size]);
 
       recordScalar("Bandwidth: ", (long double)(byte_count*8)/(simTime().dbl() - START_TIME));
+
+      ofstream MyFile("best_flow_size reset.txt");
+      MyFile <<  best_flow_size.str() << std::endl;
+      MyFile.close();
+
       scheduleAt(simTime() + TIME_INTERVAL_FOR_OUTPUTS,message);
       return;
     }
@@ -213,6 +232,7 @@ void Switch::handleMessage(cMessage *message)
     //RX:
     //Elephant Detector:
     if(type == TOR && kind_of_packet == DATAPACKET && (elephant_count % elephant_sample_rx == 0)){ // Act only if this is a Data packet in the ToR
+        elephant_count++;
         msg = check_and_cast<DataPacket *>(message);
 
 
@@ -223,7 +243,6 @@ void Switch::handleMessage(cMessage *message)
             elephant_table[dest].last_time = simTime();
         }
         else {
-            elephant_count++;
             if( elephant_table_size <= elephant_table_max_size){ //Every few packets we will sample a packet in RX
                elephant_table_size++;
                elephant_struct new_pkt;
@@ -231,6 +250,9 @@ void Switch::handleMessage(cMessage *message)
                new_pkt.count = 0;
                new_pkt.first_appearance = simTime();
                new_pkt.last_time = simTime();
+               new_pkt.flow_size = (int)msg->getFlow_size();
+               new_pkt.rate = msg->getRate();
+               EV << "  new_pkt.flow_size = " <<  new_pkt.flow_size << endl;
                elephant_table[dest] = new_pkt;
            }
         }
@@ -243,31 +265,33 @@ void Switch::handleMessage(cMessage *message)
 
     //TX:
     switch(kind_of_packet){
-        case DATAPACKET:
         case HITPACKET:
         {
             msg = check_and_cast<DataPacket *>(message);
-            if(msg->getExternal_destination() == 1){
-               egressPort = hit_forward(msg->getDestination());
+            egressPort = hit_forward(msg->getDestination());
+            sendDelayed(msg,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
+            break; // end case
+        }
+        case DATAPACKET:
+        {
+            msg = check_and_cast<DataPacket *>(message);
+            switch(cache_search(msg)){
+              case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
+                  if(type != TOR)fc_send(msg);
+                  //break; //in purpose
+              case FOUND:
+                  egressPort = hit_forward(msg->getDestination());
+                  msg->setExternal_destination(1);
+                  msg->setKind(HITPACKET);
+                  hit_packets++;
+                  break;
+              case NOTFOUND:
+                  egressPort = miss_table_search(msg->getDestination());
+                  msg->setMiss_hop(msg->getMiss_hop() + 1);
+                  miss_packets++;
+                  break;
             }
-            else {
-               switch(cache_search(msg->getDestination())){
-                   case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
-                       if(type != TOR)fc_send(msg);
-                       //break; //in purpose
-                   case FOUND:
-                       egressPort = hit_forward(msg->getDestination());
-                       msg->setExternal_destination(1);
-                       msg->setKind(HITPACKET);
-                       hit_packets++;
-                       break;
-                   case NOTFOUND:
-                       egressPort = miss_table_search(msg->getDestination());
-                       msg->setMiss_hop(msg->getMiss_hop() + 1);
-                       miss_packets++;
-                       break;
-            }
-            }
+
             sendDelayed(msg,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
             break; // end case
         }
@@ -282,11 +306,10 @@ void Switch::handleMessage(cMessage *message)
             }
             //break; //in purpose
         }
-        case INSERTRULE_PUSH:
+        case INSERTRULE_PUSH: // The real insertion"
         {
 
             //statics:
-
            if(kind_of_packet == INSERTRULE_PULL){
                insertion_count_pull++;
            }
@@ -351,13 +374,35 @@ void Switch::handleMessage(cMessage *message)
             elephant_table.clear(); //clear the elephant_table
             elephant_count = 0;
             elephant_table_size = 0;
+
+
+            //Update bandwidth_elephant_threshold:
+/*
+            double hit_ratio = (hit_packets + miss_packets)?(((double)(hit_packets))/((double)(hit_packets + miss_packets))):(0);
+            int next_step = sign(hit_ratio - abs(last_hit_ratio))*sign(last_hit_ratio);//if we are good proceed, else change direct;
+            index_flow_size = min(42,max(25,index_flow_size + next_step));
+
+            //if(id == 0 && type == TOR)std::cout <<"CCCC!!!!!!! time = "<< simTime() <<"  best_flow_size = "<< sizes[index_flow_size] <<"  ,index_flow_size = " << index_flow_size<< "  prove = "<< sign(hit_ratio - abs(last_hit_ratio)) <<endl;
+            //Reset Hit Ratio:
+            hit_packets = 0;
+            miss_packets = 0;
+            last_hit_ratio = (double)(next_step)*hit_ratio;//keep the last step;
+            best_flow_size.record(index_flow_size);
+
+            //End bandwidth_elephant_threshold:
+
+*/
+
+
+
+
             scheduleAt(simTime() + flush_elephant_time,message);
             break; // end case
         }
         case CHECK_FOR_ELEPHANT_PKT:
         {
             for (std::map<uint64_t, elephant_struct>::iterator it=elephant_table.begin(); it!=elephant_table.end(); ++it){
-                if((it->second).count >= bandwidth_elephant_threshold &&  (cache.count(it->first)) == 0 /* &&(simTime() - (it->second).last_time) > already_requested_threshold */){
+                if(/*(it->second).count >= bandwidth_elephant_threshold*/  (it->second).flow_size >= bandwidth_elephant_threshold &&  (cache.count(it->first)) == 0 /* &&(simTime() - (it->second).last_time) > already_requested_threshold */){
                     //If the bandwidth of this flow is greater than a certain threshold and also that it has not been requested recently and also is not in the cache
                     //send request pkt:
                     pck = new InsertionPacket("Request for a rule");
@@ -422,17 +467,19 @@ void Switch::fc_send(DataPacket *msg){
     cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
     sendDelayed(conpacket,processing_time_on_data_packet_in_sw, "port$o", arrivalGate); //Model the processing time on a data packet
 }
-int Switch::cache_search(uint64_t rule){
+int Switch::cache_search(DataPacket *msg){
+    uint64_t rule = msg->getDestination();
     auto it = cache.find(rule);
 
     if (it == cache.end()) {// not found
         return NOTFOUND;
-    } else {// found
-
+    }
+    else {// found
         it->second.count = it->second.count + 1;
         it->second.last_time = simTime();
 
-        if( it->second.count > threshold){
+        //if( it->second.count > threshold){
+        if(msg->getFlow_size() >= threshold){
             return THRESHOLDCROSS;
         }
         else {
@@ -463,6 +510,7 @@ int Switch::miss_table_search(uint64_t dest){
             return egressPort;
         }
     }
+    std::cout << "ERROR in miss_table_search function: try to find the port and fail. destination =  "<< dest <<endl;
 
 }
 

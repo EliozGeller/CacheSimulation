@@ -31,6 +31,11 @@ Define_Module(Destination);
 
 void Destination::initialize()
 {
+
+
+
+    start = std::chrono::steady_clock::now();
+
     miss_count.setName("miss count");
     out_of_order.setName("out of order");
     byte_counter = 0;
@@ -57,8 +62,6 @@ void Destination::initialize()
 
 void Destination::handleMessage(cMessage *message)
 {
-
-
     switch(message->getKind()){
     case HITPACKET:
     case DATAPACKET:
@@ -114,6 +117,8 @@ void Destination::handleMessage(cMessage *message)
         out_of_order.recordAs(name1.c_str());
 
         //print  maps:
+
+        std::cout << dir + name + ".txt"<< endl;
         ofstream MyFile(dir + name + ".txt");
         //print miss count:
         MyFile << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
@@ -138,6 +143,9 @@ void Destination::handleMessage(cMessage *message)
         break;
     }
     }
+
+
+
 }
 
 long long int Destination::out_of_order_statistics(DataPacket* msg)
@@ -159,6 +167,19 @@ void Destination::finish()
 
     miss_count.recordAs("miss count");
     out_of_order.recordAs("out of order");
+
+
+
+
+    //Measure the simulation duration:
+    // Record the end time
+    auto end = std::chrono::steady_clock::now();
+
+    // Calculate the duration in seconds
+    auto duration_time = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+    EV << "Simulation took " << duration_time << " seconds" << endl;
+    recordScalar("Simulation duration (in seconds). By chrono library: ",(unsigned long long int)duration_time);
 }
 
 

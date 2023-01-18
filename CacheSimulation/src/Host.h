@@ -30,6 +30,10 @@ class Host : public cSimpleModule
 {
 private:
    int id;
+   std::vector<std::vector<long double>> size_distribution_file;
+   int vector_distribution_file_size;
+   uint64_t policy_size;
+   uint64_t large_flow;
    uint64_t destination;
    long long int flow_size; //in bytes
    long double rate;
@@ -42,6 +46,10 @@ private:
    simtime_t inter_arrival_time_between_flows;
    cMessage *genpack = nullptr;
    bool first;
+
+   uint64_t higher_bound_of_subnet;
+   uint64_t lower_bound_of_subnet;
+   int subnet_size = 5000;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
