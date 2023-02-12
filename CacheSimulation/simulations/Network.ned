@@ -65,6 +65,7 @@ network Network
         string cache_percentage;
         string eviction_sample_size;
         //Traffic:
+        string total_rate_in_tor;
         string inter_arrival_time_between_packets;
         string inter_arrival_time_between_flowlets;
         string inter_arrival_time_between_flows;
@@ -81,7 +82,8 @@ network Network
         bool record_traffic;
         bool create_offline_traffic;
         
-        int x;
+        string size_distribution;
+        double scale;
 
 
         //end simulation parameters
