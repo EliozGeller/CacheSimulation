@@ -122,7 +122,7 @@ std::string mysplitstring(std::string str,std::string delimiter,int position_of_
 
 void convert_xl_to_csv() {
     // Open the .xlsx file for reading
-    ifstream xlsxFile("data/data.csv");
+    ifstream xlsxFile("data/data.xlsx");
 
     // Open the .csv file for writing
     ofstream csvFile("bbb.csv", std::ios::trunc);
@@ -131,6 +131,8 @@ void convert_xl_to_csv() {
     string line;
     while (getline(xlsxFile, line)) {
         // Split the line into cells using the comma delimiter
+        cout << line << endl;
+        cout << (line == "") << endl;
         size_t pos = 0;
         string cell;
         while ((pos = line.find(',')) != string::npos) {
@@ -143,6 +145,8 @@ void convert_xl_to_csv() {
         // Write the last cell in the line to the .csv file
         csvFile << line << endl;
     }
+
+    cout<< "rggr" << endl;
 
     // Close the .xlsx and .csv files
     xlsxFile.close();

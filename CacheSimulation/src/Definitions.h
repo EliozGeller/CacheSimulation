@@ -17,7 +17,7 @@ using namespace std;
 
 
 #define INTERVAL 50*MICROSECOND /*1 Mili*/
-#define START_TIME 5.0
+#define START_TIME 3.0
 #define TIME_INTERVAL_FOR_OUTPUTS 0.5
 //#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
 //#define INSERTION_DELAY 2*MICROSECOND
@@ -61,7 +61,7 @@ using namespace std;
 //Json file:
 #define PATH "traces/packet_trace"  // The path suffix (".json") is added in the code
 //#define PATH_DISTRIBUTION "size_distribution/FB_Hadoop_Inter_Rack_FlowCDF.csv"
-#define PATH_DISTRIBUTION "size_distribution/i-websearch.csv"
+//#define PATH_DISTRIBUTION "size_distribution/i-websearch.csv"
 #define PATH_DATA "data/data.csv"
 
 

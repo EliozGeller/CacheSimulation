@@ -33,31 +33,42 @@ void Destination::initialize()
 {
 
 
-
+    //take the start time of the simulation:
     start = std::chrono::steady_clock::now();
 
+    //set names of histograms:
     miss_count.setName("miss count");
     out_of_order.setName("out of order");
+
+
+    //set the byte count in the destination:
     byte_counter = 0;
 
 
-    //new Histogram;
+    ////start the process of the the intervals for outputs:
     bandwidth_hist.setName("bandwidth hist");
     cMessage *hist_msg = new cMessage("hist_msg");
     hist_msg->setKind(HIST_MSG);
     scheduleAt(simTime() + START_TIME + TIME_INTERVAL_FOR_OUTPUTS,hist_msg);
 
+
+    //start the process of the the intervals:
     cMessage *m = new cMessage("flow_count");
     m->setKind(INTERVAL_PCK);
     scheduleAt(simTime() + START_TIME + INTERVAL,m);
     //end new histogram
 
-    //set the dir:
+    //set the directory for the txt files outputs:
     dir = getParentModule()->par("output_file").stdstringValue();
-    EV << dir[0] << endl;
 
 
+    //record simulation parameters:
     recordScalar("run_elephant: ",getParentModule()->par("run_elephant").boolValue());
+    recordScalar("run_push: ",getParentModule()->par("run_push").boolValue());
+    recordScalar("cache_size: ",stoi(getParentModule()->par("cache_size").stdstringValue()));
+    recordScalar("scale: ",getParentModule()->par("scale").doubleValue());
+    recordScalar("total_rate_in_tor: ",stold(getParentModule()->par("total_rate_in_tor").stdstringValue())/(getParentModule()->par("scale").doubleValue()));
+
 }
 
 void Destination::handleMessage(cMessage *message)
@@ -94,7 +105,7 @@ void Destination::handleMessage(cMessage *message)
     }
     case INTERVAL_PCK:
     {
-       bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL*1000000000000.0));
+       bandwidth_hist.collect((long double)(byte_counter*8)/(long double)(INTERVAL));
        byte_counter = 0;
 
        scheduleAt(simTime() + INTERVAL,message);
@@ -118,7 +129,7 @@ void Destination::handleMessage(cMessage *message)
 
         //print  maps:
 
-        std::cout << dir + name + ".txt"<< endl;
+
         ofstream MyFile(dir + name + ".txt");
         //print miss count:
         MyFile << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
@@ -180,6 +191,30 @@ void Destination::finish()
 
     EV << "Simulation took " << duration_time << " seconds" << endl;
     recordScalar("Simulation duration (in seconds). By chrono library: ",(unsigned long long int)duration_time);
+
+    //print  maps:
+
+
+   ofstream MyFile(dir + "Total" + ".txt");
+   //print miss count:
+   MyFile << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
+   for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = miss_count_map.begin();
+     it != miss_count_map.end(); ++it)
+   {
+     MyFile << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+   }
+   MyFile << "}"<< std::endl;
+
+   ////print out of order:
+   MyFile << "#######################################################\nout of order:{size,rate,count,value}\n{\n";
+   for( std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>::const_iterator it = out_of_order_map.begin();
+     it != out_of_order_map.end(); ++it)
+   {
+      MyFile << "{" << it->first.first << "," << it->first.second << "," << it->second.first << "," << it->second.second << "},\n";
+   }
+   MyFile << "}"<< std::endl;
+   MyFile.close();
+
 }
 
 

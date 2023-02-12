@@ -160,8 +160,8 @@ void Hub::handleMessage(cMessage *msg)
 
     //Collect data at window size:
     if(pck_kind == INTERVAL_PCK){
-        bandwidth_hist.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000000.0));
-        bandwidth_hist_per_sec.collect((long double)(window_byte_count*8)/(long double)(INTERVAL*1000000000000.0));
+        bandwidth_hist.collect((long double)(window_byte_count*8)/(long double)(INTERVAL));
+        bandwidth_hist_per_sec.collect((long double)(window_byte_count*8)/(long double)(INTERVAL));
         window_byte_count = 0;
 
         scheduleAt(simTime() + INTERVAL,msg);

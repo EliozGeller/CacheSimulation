@@ -36,10 +36,17 @@ void Host::initialize()
 {
 
 
+    //if we create traffic from file, there is no need for Host:
+    if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
+        return;
+    }
+
+
     //Read the distribution file:
-    vector<vector<string>> size_distribution_file_string = read_data_file(PATH_DISTRIBUTION);
+    vector<vector<string>> size_distribution_file_string = read_data_file(getParentModule()->getParentModule()->par("size_distribution").stdstringValue());
     for(int i = 1 /*start from the second row*/;i < size_distribution_file_string.size();i++){
         vector<long double> row;
+        if(size_distribution_file_string[i][0] == "" or size_distribution_file_string[i][1] == "")break;
         row.push_back(stoull(size_distribution_file_string[i][0]));
         row.push_back(stold(size_distribution_file_string[i][1]));
         size_distribution_file.push_back(row);
@@ -47,24 +54,24 @@ void Host::initialize()
     vector_distribution_file_size = size_distribution_file.size();
 
     //calculate the average_flow_size:
-    uint64_t average_flow_size = 0;
     for(int i = 1 /* begin from the second row in order to calculate */; i < vector_distribution_file_size;i++){
         average_flow_size += (size_distribution_file[i][1] - size_distribution_file[i - 1][1]) * size_distribution_file[i][0];
     }
 
-    EV << "average_flow_size = " << average_flow_size << endl;
+    //cout << "average_flow_size = " << average_flow_size << endl;
+
+
 
     //set the inter_arrival_time_between_flows:
-    inter_arrival_time_between_flows = (simtime_t)((long double)(average_flow_size * 8)/((long double)(1600000000000))); // need to read from the file
+
+    long double total_rate_in_tor = stold(getParentModule()->getParentModule()->par("total_rate_in_tor").stdstringValue())/(getParentModule()->getParentModule()->par("scale").doubleValue());
+    inter_arrival_time_between_flows = (simtime_t)((long double)(average_flow_size * 8)/(total_rate_in_tor)); // need to read from the file
+
+    //0.000024329980000000
+    //0.000018315995
 
 
-    //if we create traffic from file, there is no need for Host:
-    if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
-        return;
-    }
-
-
-    inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
+    //inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
 
     policy_size =  stoull(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
     large_flow = stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue()); /*100 Mbyte*/
@@ -100,23 +107,28 @@ void Host::start_flow(simtime_t arrival_time){
     first = true;
     sequence = 0;
     id = getSimulation()->getUniqueNumber();
-    //flow_size = draw_flow_size();
-    //rate = draw_rate(4000);
 
 
-
-    //
-
-    if(uniform(0,100) <= 0.2 )flow_size = 10000 * 1500;
-    else flow_size = 100 * 1500;
-    rate = 120000000000;
-    //
+    //set the parameters of the flow:
 
 
-    destination = (uint64_t)uniform(lower_bound_of_subnet,higher_bound_of_subnet);
+    double x = 1.0/2.0;
+    if(uniform(0,1) <= x){ //Application A:
+        flow_size = draw_flow_size();
+        destination = (uint64_t)uniform(1001,policy_size);
+    }
+    else { //Application B:
+        flow_size = average_flow_size;
+        destination = (uint64_t)uniform(1,1001);
+    }
+
+    rate = draw_rate(4000);
+
     inter_arrival_time_between_packets = (simtime_t)((1500.0*8.0)/rate);
 
+    inter_arrival_time_between_flowlets = 100*inter_arrival_time_between_packets;
 
+    //end parameters
 
 
 

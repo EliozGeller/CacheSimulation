@@ -25,13 +25,8 @@ void Controller::initialize()
 
 
     //
-   // getEnvir()->setVectorAttribute(vechandle, name, value)
-    //
-
-
-
-    //
-    convert_xl_to_csv();
+    //convert_xl_to_csv();
+    //endSimulation();
 
     //
 

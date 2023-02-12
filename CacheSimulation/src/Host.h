@@ -36,6 +36,7 @@ private:
    uint64_t large_flow;
    uint64_t destination;
    long long int flow_size; //in bytes
+   uint64_t average_flow_size = 0;
    long double rate;
    long long int flowlet_size;
    int number_of_flowlet;
