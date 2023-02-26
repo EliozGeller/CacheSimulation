@@ -35,7 +35,6 @@ Define_Module(Host);
 void Host::initialize()
 {
 
-    id = getIndex();
 
     //if we create traffic from file, there is no need for Host:
     if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
@@ -80,7 +79,7 @@ void Host::initialize()
     //cout << "id = " << id << "  start_time = " << start_time << endl;
 
     //set maximum of last flow appearance:
-    simtime_t next_time = start_time + exponential(inter_arrival_time_between_flows);
+    simtime_t next_time = start_time + /*exponential(inter_arrival_time_between_flows)*/  inter_arrival_time_between_flows;
     getParentModule()->par("last_flow_appearance").setDoubleValue(next_time.dbl());
 
 
@@ -97,10 +96,10 @@ void Host::initialize()
     pck->setKind(BOUNDS_IN_HOSTS_PCK);
     scheduleAt(simTime() + START_TIME + 0.001,pck);
 
+
     start_flow(start_time);
 }
 void Host::start_flow(simtime_t arrival_time){
-
     if(genpack)cancelAndDelete(genpack);
 
     first = true;
@@ -159,21 +158,8 @@ void Host::handleMessage(cMessage *message)
     int first_flag = 0,size_packet = 1500;
 
 
-
-    //
-    static bool y = false;
-    //
-
    simtime_t arrival_time;
    switch(message->getKind()){
-        case 100:
-        {
-            simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
-            getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
-
-           start_flow(start_time);
-            break;
-        }
         case GENERATEPACKET:
           {
               //mark the first packet in the flow:
@@ -202,62 +188,34 @@ void Host::handleMessage(cMessage *message)
 
             //Checking whether the flow ends before the start of the time
             else{
-
-                //
-                if(y)cout << "start and then finish" << endl;
-                //
-
-                EV << "aaaa"  << endl;
-               simtime_t transmination_time_of_flow = (long double)flow_size/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+               simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
                simtime_t end_of_flow = simTime() + transmination_time_of_flow;
-               if(end_of_flow < START_TIME  and first)
+               if(end_of_flow < START_TIME) //measure if the flow will end before the start time
                {
-                   EV << "bbbb"  << endl;
-                   message->setKind(100);
-                   genpack = message;
-                   scheduleAt(end_of_flow,message);
+                   simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + /*exponential(inter_arrival_time_between_flows)*/  inter_arrival_time_between_flows);
+                   getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
-
-
-
-                   //simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
-                   //getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
-
-                   //start_flow(start_time);
+                   start_flow(start_time);
 
                    return;
                }
 
             }
-
-            //
-
-            if(first){
-                cout << "Flow start"<< endl;
-                y = true;
-            }
-
-
-            //
             first = false;
 
 
           //schedule the next packet or end the flow:
           sequence++;
           flowlet_size -= size_packet;
-          EV << "flowlet_size = "<< flowlet_size << endl;
 
 
           if(flowlet_size < 0){
-              EV << "cccc"  << endl;
               flowlet_count++;
               if(flowlet_count >= number_of_flowlet){// end of flow:
-                  EV << "dddd"  << endl;
                 //strat new flow:
-                simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
+                simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + inter_arrival_time_between_flows /*exponential(inter_arrival_time_between_flows)*/);
                 getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
-                EV << "END OF FLOW    "    <<  simTime() << "   size = "  <<  flow_size  <<  "   rate = "  << rate << endl;
 
                 start_flow(start_time);
                 //end start new flow
@@ -271,7 +229,6 @@ void Host::handleMessage(cMessage *message)
               }
           }
           else {
-              EV << "eeee"  << endl;
               arrival_time = inter_arrival_time_between_packets;
           }
 
