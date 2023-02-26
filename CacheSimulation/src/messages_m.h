@@ -27,6 +27,7 @@ namespace cachesimulation {
  *     uint64_t destination;
  *     uint64_t external_destination = 0;
  *     int miss_hop = 0;
+ *     uint8_t app_type;
  *     string id;
  *     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
  *     uint64_t flow_size = 0;
@@ -42,6 +43,7 @@ class DataPacket : public ::omnetpp::cPacket
     uint64_t destination;
     uint64_t external_destination;
     int miss_hop;
+    uint8_t app_type;
     ::omnetpp::opp_string id;
     int request;
     uint64_t flow_size;
@@ -72,6 +74,8 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setExternal_destination(uint64_t external_destination);
     virtual int getMiss_hop() const;
     virtual void setMiss_hop(int miss_hop);
+    virtual uint8_t getApp_type() const;
+    virtual void setApp_type(uint8_t app_type);
     virtual const char * getId() const;
     virtual void setId(const char * id);
     virtual int getRequest() const;
@@ -90,7 +94,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:34</tt> by nedtool.
+ * Class generated from <tt>messages.msg:35</tt> by nedtool.
  * <pre>
  * packet InsertionPacket
  * {
@@ -144,7 +148,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj)
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:43</tt> by nedtool.
+ * Class generated from <tt>messages.msg:44</tt> by nedtool.
  * <pre>
  * packet Data_for_partition
  * {
@@ -183,7 +187,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& o
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:48</tt> by nedtool.
+ * Class generated from <tt>messages.msg:49</tt> by nedtool.
  * <pre>
  * packet Partition_update_msg
  * {

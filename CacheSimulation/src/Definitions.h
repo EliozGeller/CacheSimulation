@@ -17,6 +17,7 @@ using namespace std;
 
 
 #define INTERVAL 50*MICROSECOND /*1 Mili*/
+#define NUM_OF_APPS 2.0
 #define START_TIME 3.0
 #define TIME_INTERVAL_FOR_OUTPUTS 0.5
 //#define PROCESSING_TIME_ON_DATA_PACKET_IN_SW 0.1*MICROSECOND
@@ -85,6 +86,7 @@ using namespace std;
 #define LZY_EVICT 15
 #define RECORD_OR_CREATE_TRAFFIC_PCK 16
 #define BOUNDS_IN_HOSTS_PCK 17
+#define ESTIMATE_RATE_PCK 18
 
 
 
@@ -107,8 +109,11 @@ using namespace std;
 //Structs:
 //Struct of a rule in the cache
 typedef struct{
-    unsigned long int count;
-    simtime_t last_time;
+    unsigned long int count;  //count the packets that the rule managed to catch
+    unsigned long long int bit_count; // count the bits that the rule managed to catch
+    simtime_t first_packet;   //Intended for estimate the rate for each port-destination flow
+    simtime_t last_time;   //Intended for calculation for LRU eviction
+    std::vector<double> port_dest_count;  //Intended for estimate the rate for each port-destination flow
 }ruleStruct;
 
 //Elephant struct

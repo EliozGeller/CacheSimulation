@@ -39,6 +39,8 @@ void Destination::initialize()
     //set names of histograms:
     miss_count.setName("miss count");
     out_of_order.setName("out of order");
+    miss_count_by_apps.setName("miss_count_by_apps");
+
 
 
     //set the byte count in the destination:
@@ -79,10 +81,12 @@ void Destination::handleMessage(cMessage *message)
     {
         DataPacket *msg = check_and_cast<DataPacket *>(message);
         byte_counter += msg->getByteLength();
-        EV <<" id = " <<msg->getId() << endl;
+
 
         //statistics for miss count
         miss_count.collect(msg->getMiss_hop());
+        miss_count_by_apps.collect(msg->getMiss_hop() + ( msg->getApp_type() / NUM_OF_APPS));
+        //cout << "x = " << msg->getMiss_hop() + ( msg->getApp_type() / NUM_OF_APPS) << endl;
 
         //statistics for out of order
         long long int diff = out_of_order_statistics(msg);
@@ -178,23 +182,15 @@ void Destination::finish()
 
     miss_count.recordAs("miss count");
     out_of_order.recordAs("out of order");
+    bandwidth_hist.recordAs("bandwidth to destination");
+    miss_count_by_apps.recordAs("miss_count_by_apps");
 
 
 
 
-    //Measure the simulation duration:
-    // Record the end time
-    auto end = std::chrono::steady_clock::now();
 
-    // Calculate the duration in seconds
-    auto duration_time = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-
-    EV << "Simulation took " << duration_time << " seconds" << endl;
-    recordScalar("Simulation duration (in seconds). By chrono library: ",(unsigned long long int)duration_time);
 
     //print  maps:
-
-
    ofstream MyFile(dir + "Total" + ".txt");
    //print miss count:
    MyFile << "#######################################################\nmiss_count_map:{size,rate,count,value}\n{\n";
@@ -214,6 +210,17 @@ void Destination::finish()
    }
    MyFile << "}"<< std::endl;
    MyFile.close();
+
+
+   //Measure the simulation duration:
+   // Record the end time
+   auto end = std::chrono::steady_clock::now();
+
+   // Calculate the duration in seconds
+   auto duration_time = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+   EV << "Simulation took " << duration_time << " seconds" << endl;
+   recordScalar("Simulation duration (in seconds). By chrono library: ",(unsigned long long int)duration_time);
 
 }
 

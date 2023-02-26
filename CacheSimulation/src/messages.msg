@@ -22,6 +22,7 @@ packet DataPacket
     uint64_t destination;
     uint64_t external_destination = 0;
     int miss_hop = 0;
+    uint8_t app_type;
     string id;
     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
     uint64_t flow_size = 0;

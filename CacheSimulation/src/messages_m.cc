@@ -185,6 +185,7 @@ DataPacket::DataPacket(const char *name, short kind) : ::omnetpp::cPacket(name,k
     this->destination = 0;
     this->external_destination = 0;
     this->miss_hop = 0;
+    this->app_type = 0;
     this->request = 0;
     this->flow_size = 0;
     this->rate = 0;
@@ -214,6 +215,7 @@ void DataPacket::copy(const DataPacket& other)
     this->destination = other.destination;
     this->external_destination = other.external_destination;
     this->miss_hop = other.miss_hop;
+    this->app_type = other.app_type;
     this->id = other.id;
     this->request = other.request;
     this->flow_size = other.flow_size;
@@ -228,6 +230,7 @@ void DataPacket::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->destination);
     doParsimPacking(b,this->external_destination);
     doParsimPacking(b,this->miss_hop);
+    doParsimPacking(b,this->app_type);
     doParsimPacking(b,this->id);
     doParsimPacking(b,this->request);
     doParsimPacking(b,this->flow_size);
@@ -242,6 +245,7 @@ void DataPacket::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->destination);
     doParsimUnpacking(b,this->external_destination);
     doParsimUnpacking(b,this->miss_hop);
+    doParsimUnpacking(b,this->app_type);
     doParsimUnpacking(b,this->id);
     doParsimUnpacking(b,this->request);
     doParsimUnpacking(b,this->flow_size);
@@ -278,6 +282,16 @@ int DataPacket::getMiss_hop() const
 void DataPacket::setMiss_hop(int miss_hop)
 {
     this->miss_hop = miss_hop;
+}
+
+uint8_t DataPacket::getApp_type() const
+{
+    return this->app_type;
+}
+
+void DataPacket::setApp_type(uint8_t app_type)
+{
+    this->app_type = app_type;
 }
 
 const char * DataPacket::getId() const
@@ -405,7 +419,7 @@ const char *DataPacketDescriptor::getProperty(const char *propertyname) const
 int DataPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 9+basedesc->getFieldCount() : 9;
+    return basedesc ? 10+basedesc->getFieldCount() : 10;
 }
 
 unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
@@ -426,8 +440,9 @@ unsigned int DataPacketDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<9) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<10) ? fieldTypeFlags[field] : 0;
 }
 
 const char *DataPacketDescriptor::getFieldName(int field) const
@@ -442,6 +457,7 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "destination",
         "external_destination",
         "miss_hop",
+        "app_type",
         "id",
         "request",
         "flow_size",
@@ -449,7 +465,7 @@ const char *DataPacketDescriptor::getFieldName(int field) const
         "first_packet",
         "last_packet",
     };
-    return (field>=0 && field<9) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<10) ? fieldNames[field] : nullptr;
 }
 
 int DataPacketDescriptor::findField(const char *fieldName) const
@@ -459,12 +475,13 @@ int DataPacketDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='d' && strcmp(fieldName, "destination")==0) return base+0;
     if (fieldName[0]=='e' && strcmp(fieldName, "external_destination")==0) return base+1;
     if (fieldName[0]=='m' && strcmp(fieldName, "miss_hop")==0) return base+2;
-    if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+3;
-    if (fieldName[0]=='r' && strcmp(fieldName, "request")==0) return base+4;
-    if (fieldName[0]=='f' && strcmp(fieldName, "flow_size")==0) return base+5;
-    if (fieldName[0]=='r' && strcmp(fieldName, "rate")==0) return base+6;
-    if (fieldName[0]=='f' && strcmp(fieldName, "first_packet")==0) return base+7;
-    if (fieldName[0]=='l' && strcmp(fieldName, "last_packet")==0) return base+8;
+    if (fieldName[0]=='a' && strcmp(fieldName, "app_type")==0) return base+3;
+    if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+4;
+    if (fieldName[0]=='r' && strcmp(fieldName, "request")==0) return base+5;
+    if (fieldName[0]=='f' && strcmp(fieldName, "flow_size")==0) return base+6;
+    if (fieldName[0]=='r' && strcmp(fieldName, "rate")==0) return base+7;
+    if (fieldName[0]=='f' && strcmp(fieldName, "first_packet")==0) return base+8;
+    if (fieldName[0]=='l' && strcmp(fieldName, "last_packet")==0) return base+9;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -480,6 +497,7 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "uint64_t",
         "uint64_t",
         "int",
+        "uint8_t",
         "string",
         "int",
         "uint64_t",
@@ -487,7 +505,7 @@ const char *DataPacketDescriptor::getFieldTypeString(int field) const
         "int",
         "bool",
     };
-    return (field>=0 && field<9) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<10) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **DataPacketDescriptor::getFieldPropertyNames(int field) const
@@ -557,12 +575,13 @@ std::string DataPacketDescriptor::getFieldValueAsString(void *object, int field,
         case 0: return uint642string(pp->getDestination());
         case 1: return uint642string(pp->getExternal_destination());
         case 2: return long2string(pp->getMiss_hop());
-        case 3: return oppstring2string(pp->getId());
-        case 4: return long2string(pp->getRequest());
-        case 5: return uint642string(pp->getFlow_size());
-        case 6: return double2string(pp->getRate());
-        case 7: return long2string(pp->getFirst_packet());
-        case 8: return bool2string(pp->getLast_packet());
+        case 3: return ulong2string(pp->getApp_type());
+        case 4: return oppstring2string(pp->getId());
+        case 5: return long2string(pp->getRequest());
+        case 6: return uint642string(pp->getFlow_size());
+        case 7: return double2string(pp->getRate());
+        case 8: return long2string(pp->getFirst_packet());
+        case 9: return bool2string(pp->getLast_packet());
         default: return "";
     }
 }
@@ -580,12 +599,13 @@ bool DataPacketDescriptor::setFieldValueAsString(void *object, int field, int i,
         case 0: pp->setDestination(string2uint64(value)); return true;
         case 1: pp->setExternal_destination(string2uint64(value)); return true;
         case 2: pp->setMiss_hop(string2long(value)); return true;
-        case 3: pp->setId((value)); return true;
-        case 4: pp->setRequest(string2long(value)); return true;
-        case 5: pp->setFlow_size(string2uint64(value)); return true;
-        case 6: pp->setRate(string2double(value)); return true;
-        case 7: pp->setFirst_packet(string2long(value)); return true;
-        case 8: pp->setLast_packet(string2bool(value)); return true;
+        case 3: pp->setApp_type(string2ulong(value)); return true;
+        case 4: pp->setId((value)); return true;
+        case 5: pp->setRequest(string2long(value)); return true;
+        case 6: pp->setFlow_size(string2uint64(value)); return true;
+        case 7: pp->setRate(string2double(value)); return true;
+        case 8: pp->setFirst_packet(string2long(value)); return true;
+        case 9: pp->setLast_packet(string2bool(value)); return true;
         default: return false;
     }
 }

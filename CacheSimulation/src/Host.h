@@ -35,6 +35,7 @@ private:
    uint64_t policy_size;
    uint64_t large_flow;
    uint64_t destination;
+   uint8_t app_type;
    long long int flow_size; //in bytes
    uint64_t average_flow_size = 0;
    long double rate;

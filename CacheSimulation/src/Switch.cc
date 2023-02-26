@@ -36,6 +36,9 @@ void Switch::initialize()
     //set id:
     id = getIndex();
 
+    //set the number of ports:
+    number_of_ports = gateSize("port");
+
     //start of par:
     type = (int)par("Type");
     elephant_sample_rx = stoi(getParentModule()->par("elephant_sample_rx").stdstringValue());
@@ -62,12 +65,12 @@ void Switch::initialize()
     EV << "bandwidth_elephant_threshold = " << bandwidth_elephant_threshold << endl;
     already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
     if(par("Type").intValue() == AGGREGATION){
-        par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
+        par("threshold").setIntValue(stoull(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
     }
     if(par("Type").intValue() == CONTROLLERSWITCH){
-        par("threshold").setIntValue(stoi(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
+        par("threshold").setIntValue(stoull(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
     }
-    threshold = (int)par("threshold");
+    threshold = (unsigned long long)par("threshold");
     recordScalar("push threshold: ",threshold);
     if(type == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
@@ -115,7 +118,8 @@ void Switch::initialize()
     }
 
     //initialize Elephant process:
-    if(getParentModule()->par("run_elephant").boolValue() && type == TOR){
+    run_elephant = getParentModule()->par("run_elephant").boolValue();
+    if(run_elephant && type == TOR){
         elephant_count = 0;
         cMessage* m1 = new cMessage("Flush elephant timer");
         cMessage* m2 = new cMessage("Check for elephant timer");
@@ -126,6 +130,14 @@ void Switch::initialize()
         scheduleAt(simTime() + START_TIME ,m1);
         scheduleAt(simTime() + START_TIME,m2);
     }
+
+    estimate_rate_interval = getParentModule()->par("estimate_rate_interval").doubleValue();
+    if(type != TOR){
+        //cMessage* m1 = new cMessage("Estimate rate packet");
+        //m1->setKind(ESTIMATE_RATE_PCK);
+        //scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
+    }
+
 
 
     /*
@@ -142,6 +154,8 @@ void Switch::handleMessage(cMessage *message)
     static int number_of_flows_which_ends_during_the_interval= 0;
     int egressPort;
     int kind_of_packet = message->getKind();
+    int ingressPort = -1;
+    if (!message->isSelfMessage())ingressPort =  message->getArrivalGate()->getIndex();
     int s;
     DataPacket *msg;
     InsertionPacket *pck,*m1,*m2;
@@ -164,13 +178,12 @@ void Switch::handleMessage(cMessage *message)
 
         //byte_count:
         byte_count += msg->getByteLength();
-        int pport =  msg->getArrivalGate()->getIndex();
-        byte_count_per_link[pport] += msg->getByteLength();
+        byte_count_per_link[ingressPort] += msg->getByteLength();
         if(msg->getExternal_destination() != 1){
-           before_hit_byte_count[pport] += msg->getByteLength();
+           before_hit_byte_count[ingressPort] += msg->getByteLength();
         }
         else{
-           after_hit_byte_count[pport] += msg->getByteLength();
+           after_hit_byte_count[ingressPort] += msg->getByteLength();
         }
     }
 
@@ -231,7 +244,7 @@ void Switch::handleMessage(cMessage *message)
 
     //RX:
     //Elephant Detector:
-    if(type == TOR && kind_of_packet == DATAPACKET && (elephant_count % elephant_sample_rx == 0)){ // Act only if this is a Data packet in the ToR
+    if(run_elephant and type == TOR and kind_of_packet == DATAPACKET and (elephant_count % elephant_sample_rx == 0)){ // Act only if this is a Data packet in the ToR
         elephant_count++;
         msg = check_and_cast<DataPacket *>(message);
 
@@ -275,7 +288,7 @@ void Switch::handleMessage(cMessage *message)
         case DATAPACKET:
         {
             msg = check_and_cast<DataPacket *>(message);
-            switch(cache_search(msg)){
+            switch(cache_search(msg,ingressPort)){
               case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
                   if(type != TOR)fc_send(msg);
                   //break; //in purpose
@@ -352,7 +365,9 @@ void Switch::handleMessage(cMessage *message)
             pck = check_and_cast<InsertionPacket *>(message);
             ruleStruct new_rule;
             new_rule.count = 0;
+            new_rule.bit_count = 0;
             new_rule.last_time = simTime();
+            new_rule.port_dest_count.assign(number_of_ports, 0);
             cache.insert({ pck->getRule(), new_rule });
             delete pck;
             break; // end case
@@ -453,6 +468,16 @@ void Switch::handleMessage(cMessage *message)
             scheduleAt(simTime() + 1000*MICROSECOND ,message);
             break;
         }
+        case ESTIMATE_RATE_PCK: //Reset the port-destination counters in window:
+        { //delete
+            for (auto it = cache.begin(); it != cache.end(); ++it) {
+                for (int i = 0; i < number_of_ports; i++) {
+                    it->second.port_dest_count[i] = 0;
+                }
+            }
+            scheduleAt(simTime() + estimate_rate_interval,message);
+            break;
+        }
     }
 }
 void Switch::fc_send(DataPacket *msg){
@@ -467,7 +492,7 @@ void Switch::fc_send(DataPacket *msg){
     cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
     sendDelayed(conpacket,processing_time_on_data_packet_in_sw, "port$o", arrivalGate); //Model the processing time on a data packet
 }
-int Switch::cache_search(DataPacket *msg){
+int Switch::cache_search(DataPacket *msg,int ingressPort){
     uint64_t rule = msg->getDestination();
     auto it = cache.find(rule);
 
@@ -475,11 +500,30 @@ int Switch::cache_search(DataPacket *msg){
         return NOTFOUND;
     }
     else {// found
-        it->second.count = it->second.count + 1;
+
+        if(!it->second.count){ //set the first packet as the first packet that the rule manage to catch
+            it->second.first_packet = simTime();
+        }
+        else{
+            it->second.port_dest_count[ingressPort] += msg->getBitLength();
+            it->second.bit_count += msg->getBitLength();
+        }
+
+        it->second.count++;
         it->second.last_time = simTime();
 
+        //if(it->second.count > 1 and type == AGGREGATION)cout << "(port,destination) = (" <<ingressPort << " , "  <<rule << ")  flow id = " << msg->getId() <<"  estimate (port,dest) rate = " << (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) << "  estimate rate = " << (it->second.bit_count/(simTime().dbl() - it->second.first_packet.dbl())) << "   real rate = " << msg->getRate() << endl;
+
+
+
         //if( it->second.count > threshold){
-        if(msg->getFlow_size() >= threshold){
+        //if(msg->getFlow_size() >= threshold){
+        //if(msg->getRate() >= threshold){
+        //if(msg->getApp_type() == 0){
+        if((it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= threshold and it->second.count >= 1){  //port-dest rate estimate
+        //if((it->second.bit_count/(simTime().dbl() - it->second.first_packet.dbl())) >= threshold and it->second.count >= 1){  //rate estimate
+        //if(false){  //never insert
+        //if(true){  //push fast cache
             return THRESHOLDCROSS;
         }
         else {
@@ -561,6 +605,10 @@ int Switch::hash(uint64_t dest){
     EV<< "dest = "<< dest<<endl;
     return (int)ceil((float)dest/(float)(policy_size/num_of_agg));
     //return (int)uniform(1,num_of_agg + 1);
+}
+
+double Switch::get_hit_ratio(){
+    return (hit_packets + miss_packets)?(((double)(hit_packets))/((double)(hit_packets + miss_packets))):(0);
 }
 
 std::string Switch::which_switch_i_am(){

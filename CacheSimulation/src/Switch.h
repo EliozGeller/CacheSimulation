@@ -37,10 +37,13 @@ class Switch : public cSimpleModule
     int id;
     uint64_t policy_size;
     std::map<uint64_t, ruleStruct> cache;
+    int number_of_ports;
     std::map<uint64_t, elephant_struct> elephant_table;
     int elephant_table_size = 0;
     int elephant_table_max_size;
+    bool run_elephant;
     partition_rule* miss_table;
+    double estimate_rate_interval;
     int miss_table_size;
     unsigned long int cache_size_t = 0;
     unsigned long int elephant_count; //Counter for sampling packets in RX
@@ -93,7 +96,7 @@ class Switch : public cSimpleModule
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
-    virtual int cache_search(DataPacket *msg);
+    virtual int cache_search(DataPacket *msg,int ingressPort);
     virtual int miss_table_search(uint64_t rule);
     virtual uint64_t which_rule_to_evict(int s);
     virtual void fc_send(DataPacket *msg);
@@ -101,6 +104,7 @@ class Switch : public cSimpleModule
     virtual int hit_forward(uint64_t dest);
     virtual int internal_forwarding_port (InsertionPacket *msg);
     virtual std::string which_switch_i_am();
+    virtual double get_hit_ratio();
 
 };
 

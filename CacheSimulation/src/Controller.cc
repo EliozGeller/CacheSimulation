@@ -34,7 +34,7 @@ void Controller::initialize()
 
     //set all parameters from csv file;
     set_all_parameters();
-    initialization_start_time_for_flows();
+    //initialization_start_time_for_flows();
     byte_counter = 0;
 
     // Define the initial partition
@@ -118,7 +118,7 @@ void Controller::handleMessage(cMessage *message)
     }
     case INTERVAL_PCK:
     {
-        bandwidth_hist.collect(((long double)(byte_counter*8))/(long double)(INTERVAL*1000000000000.0));
+        bandwidth_hist.collect(((long double)(byte_counter*8))/(long double)(INTERVAL));
         byte_counter = 0;
 
 

@@ -38,6 +38,7 @@ class Destination : public cSimpleModule
   private:
     std::string dir;
     cHistogram miss_count;
+    cHistogram miss_count_by_apps;
     cHistogram out_of_order;
     cHistogram bandwidth_hist;
     unsigned long long int byte_counter;

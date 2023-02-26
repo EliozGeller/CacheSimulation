@@ -7,7 +7,7 @@ module Rack
 {
     parameters:
         int number_of_hosts;
-        string last_flow_appearance;
+        double last_flow_appearance;
     gates:
         inout port[];
     submodules:
@@ -18,8 +18,8 @@ module Rack
             @display("p=363,290,r,50;i=device/pc");
         }
     connections:
-        hub.port++ <--> port++;
+        hub.port++ <-->{delay = 1us;}<--> port++;
         for i=0..number_of_hosts-1 {
-            host[i].port++ <--> hub.port++;
+            host[i].port++ <-->{delay = 1us;}<--> hub.port++;
         }
 }

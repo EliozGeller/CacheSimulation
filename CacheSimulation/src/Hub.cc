@@ -142,6 +142,9 @@ void Hub::initialize()
 void Hub::handleMessage(cMessage *msg)
 {
 
+
+
+
     int pck_kind = msg->getKind();
     //Plot histograms:
     if(pck_kind == HIST_MSG){
@@ -176,6 +179,7 @@ void Hub::handleMessage(cMessage *msg)
 
     // data packet from here:
     DataPacket *m = check_and_cast<DataPacket *>(msg);
+
 
 
 
@@ -255,7 +259,7 @@ void Hub::handleMessage(cMessage *msg)
 }
 
 void Hub::finish(){
-    EV << "Bandwidth in Hub: "<< (long double)(byte_count*8)/simTime().dbl()<< "bps"<< endl;
+    EV << "Bandwidth in Hub: "<< bandwidth_hist.getMean()<< "bps"<< endl;
 
     bandwidth_hist.recordAs("bandwidth hist");
     traffic_file.close();
