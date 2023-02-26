@@ -84,6 +84,7 @@ network Network
         
         string size_distribution;
         double scale;
+        double estimate_rate_interval;
 
 
         //end simulation parameters
