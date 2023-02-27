@@ -75,7 +75,7 @@ class Switch : public cSimpleModule
 
     //flow count:
     cHistogram flow_count_hist;
-    std::map<string, int> flow_count;
+    std::map<uint64_t, int> flow_count;
 
     //replace to par:
     int type;
@@ -88,7 +88,7 @@ class Switch : public cSimpleModule
     long double eviction_delay;
     long double flush_elephant_time;
     long double check_for_elephant_time;
-    unsigned long long threshold;
+    double threshold;
     int num_of_agg;
 
 ;

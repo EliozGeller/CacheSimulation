@@ -24,7 +24,7 @@
 #include <string>
 
 
-simtime_t last_flow_a;
+bool current_flow[20][20000] = {0};
 
 
 
@@ -34,8 +34,6 @@ Define_Module(Host);
 
 void Host::initialize()
 {
-
-
     //if we create traffic from file, there is no need for Host:
     if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
         return;
@@ -65,8 +63,8 @@ void Host::initialize()
     //set the inter_arrival_time_between_flows:
 
     long double total_rate_in_tor = stold(getParentModule()->getParentModule()->par("total_rate_in_tor").stdstringValue())/(getParentModule()->getParentModule()->par("scale").doubleValue());
-    inter_arrival_time_between_flows = (simtime_t)((long double)(average_flow_size * 8)/(total_rate_in_tor)); // need to read from the file
-    //inter_arrival_time_between_flows = (simtime_t)((long double)((0.5 * average_flow_size + 0.5 * 5000) * 8)/(total_rate_in_tor)); // need to read from the file
+    //inter_arrival_time_between_flows = (simtime_t)((long double)(average_flow_size * 8)/(total_rate_in_tor)); // need to read from the file
+    inter_arrival_time_between_flows = (simtime_t)((long double)((0.5 * average_flow_size + 0.5 * 5000) * 8)/(total_rate_in_tor));
 
 
     //inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
@@ -79,7 +77,7 @@ void Host::initialize()
     //cout << "id = " << id << "  start_time = " << start_time << endl;
 
     //set maximum of last flow appearance:
-    simtime_t next_time = start_time + /*exponential(inter_arrival_time_between_flows)*/  inter_arrival_time_between_flows;
+    simtime_t next_time = start_time + exponential(inter_arrival_time_between_flows);
     getParentModule()->par("last_flow_appearance").setDoubleValue(next_time.dbl());
 
 
@@ -107,22 +105,40 @@ void Host::start_flow(simtime_t arrival_time){
     id = getSimulation()->getUniqueNumber();
 
 
+
+    //end the former flow:
+    if(destination <= 5000)current_flow[getParentModule()->getIndex()][destination] = false;
+
     //set the parameters of the flow:
     rate = draw_rate(4000); // 4000 - 2.5 G
 
-    double x = 10;//0.5;  //Change!!!!!
-    if(uniform(0,1) <= x){ //Application A:
+    double prob_of_app_A = 0.5;  //Change!!!!!
+    int app_B_size = average_flow_size;//average_flow_size;
+    inter_arrival_time_between_flows = (simtime_t)((long double)((prob_of_app_A * average_flow_size + (1 - prob_of_app_A) * app_B_size) * 8)/(1.6e12));
+    if(uniform(0,1) <= prob_of_app_A){ //Application A:
 
         app_type = 0;
 
-        flow_size = draw_flow_size();
-        destination = (uint64_t)uniform(1001,policy_size);
+        flow_size = average_flow_size;//draw_flow_size();
+        destination = (uint64_t)uniform(5001,policy_size);
+
+        rate = 2.5e9 * 10.0;
     }
     else { //Application B:
 
         app_type = 1;
-        flow_size = 5000;//average_flow_size;
-        destination = (uint64_t)uniform(1,800);
+        flow_size = app_B_size;
+
+        int n = 1;
+        int i = n;
+        do{
+            destination = (uint64_t)uniform(1,n);
+            i--;
+        }while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
+        //}while(false);
+        current_flow[getParentModule()->getIndex()][destination] = true;
+
+        rate = 2.5e9/10.0;
     }
 
 
@@ -192,7 +208,7 @@ void Host::handleMessage(cMessage *message)
                simtime_t end_of_flow = simTime() + transmination_time_of_flow;
                if(end_of_flow < START_TIME) //measure if the flow will end before the start time
                {
-                   simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + /*exponential(inter_arrival_time_between_flows)*/  inter_arrival_time_between_flows);
+                   simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
                    getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
                    start_flow(start_time);
@@ -213,7 +229,7 @@ void Host::handleMessage(cMessage *message)
               flowlet_count++;
               if(flowlet_count >= number_of_flowlet){// end of flow:
                 //strat new flow:
-                simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + inter_arrival_time_between_flows /*exponential(inter_arrival_time_between_flows)*/);
+                simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
                 getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
 

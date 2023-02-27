@@ -190,6 +190,7 @@ void Controller::set_all_parameters(){
     getParentModule()->par("already_requested_threshold").setStringValue(s);
 
 
+    /*
     if(getParentModule()->par("push_threshold_in_aggregation").stdstringValue() == ""){
         s = get_parameter(data_file,"Threshold in aggregation");
         getParentModule()->par("push_threshold_in_aggregation").setStringValue(s);
@@ -199,6 +200,7 @@ void Controller::set_all_parameters(){
         s = get_parameter(data_file,"Threshold in controller switch");
         getParentModule()->par("push_threshold_in_controller_switch").setStringValue(s);
     }
+    */
 
 
     s = get_parameter(data_file,"Cache percentage");

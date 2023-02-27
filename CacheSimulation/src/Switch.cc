@@ -65,12 +65,11 @@ void Switch::initialize()
     EV << "bandwidth_elephant_threshold = " << bandwidth_elephant_threshold << endl;
     already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
     if(par("Type").intValue() == AGGREGATION){
-        par("threshold").setIntValue(stoull(getParentModule()->par("push_threshold_in_aggregation").stdstringValue()));
+        threshold = getParentModule()->par("push_threshold_in_aggregation").doubleValue();
     }
     if(par("Type").intValue() == CONTROLLERSWITCH){
-        par("threshold").setIntValue(stoull(getParentModule()->par("push_threshold_in_controller_switch").stdstringValue()));
+        threshold = getParentModule()->par("push_threshold_in_controller_switch").doubleValue();
     }
-    threshold = (unsigned long long)par("threshold");
     recordScalar("push threshold: ",threshold);
     if(type == TOR){
         miss_table_size = getParentModule()->par("NumOfAggregation");
@@ -132,12 +131,17 @@ void Switch::initialize()
     }
 
     estimate_rate_interval = getParentModule()->par("estimate_rate_interval").doubleValue();
+    if(threshold != (unsigned long long)(-1) /* infinity */ and threshold != 0){
+        estimate_rate_interval = (1500.0 * 8.0 * 10.0 /*10 packets*/)/(threshold);
+    }
     if(type != TOR){
         //cMessage* m1 = new cMessage("Estimate rate packet");
         //m1->setKind(ESTIMATE_RATE_PCK);
         //scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
     }
 
+
+    cout << which_switch_i_am()  << "  th = "  <<  threshold  <<"   " << (threshold >= 100e6) << endl;
 
 
     /*
@@ -163,11 +167,11 @@ void Switch::handleMessage(cMessage *message)
     //flow_count and byte_count:
     if( kind_of_packet == DATAPACKET ||  kind_of_packet == HITPACKET){
         msg = check_and_cast<DataPacket *>(message);
-        flow_count.insert({get_flow(msg->getId()),1});
+        flow_count.insert({msg->getDestination(),1});
 
         //insert last message:
         if(msg->getLast_packet()){
-           flow_count.erase(get_flow(msg->getId()));
+           flow_count.erase(msg->getDestination());
            //delete pkt;
            number_of_flows_which_ends_during_the_interval++;
            //return;
@@ -474,6 +478,7 @@ void Switch::handleMessage(cMessage *message)
                 for (int i = 0; i < number_of_ports; i++) {
                     it->second.port_dest_count[i] = 0;
                 }
+                it->second.bit_count = 0;
             }
             scheduleAt(simTime() + estimate_rate_interval,message);
             break;
@@ -512,7 +517,7 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
         it->second.count++;
         it->second.last_time = simTime();
 
-        //if(it->second.count > 1 and type == AGGREGATION)cout << "(port,destination) = (" <<ingressPort << " , "  <<rule << ")  flow id = " << msg->getId() <<"  estimate (port,dest) rate = " << (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) << "  estimate rate = " << (it->second.bit_count/(simTime().dbl() - it->second.first_packet.dbl())) << "   real rate = " << msg->getRate() << endl;
+        if(it->second.count > 1 and type == AGGREGATION)cout << "app "  << (int)msg->getApp_type() <<  "  id = "  <<  msg->getId() <<  "  ingressPort = "  <<  ingressPort <<  "  dest = "  <<  msg->getDestination() <<  "  est rate = "  << (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet))  << "  time = "<< simTime() <<endl;
 
 
 
@@ -520,7 +525,8 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
         //if(msg->getFlow_size() >= threshold){
         //if(msg->getRate() >= threshold){
         //if(msg->getApp_type() == 0){
-        if((it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= threshold and it->second.count >= 1){  //port-dest rate estimate
+        //if((it->second.port_dest_count[ingressPort]/(estimate_rate_interval)) >= threshold){  //port-dest rate estimate
+        if((it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= threshold  and it->second.count >= 1){  //port-dest rate estimate
         //if((it->second.bit_count/(simTime().dbl() - it->second.first_packet.dbl())) >= threshold and it->second.count >= 1){  //rate estimate
         //if(false){  //never insert
         //if(true){  //push fast cache

@@ -16,7 +16,7 @@ using namespace std;
 #define MICROSECOND 0.000001
 
 
-#define INTERVAL 50*MICROSECOND /*1 Mili*/
+#define INTERVAL 1280*MICROSECOND
 #define NUM_OF_APPS 2.0
 #define START_TIME 3.0
 #define TIME_INTERVAL_FOR_OUTPUTS 0.5
