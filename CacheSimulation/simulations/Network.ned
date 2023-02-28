@@ -59,8 +59,8 @@ network Network
         string already_requested_threshold;
 
         //Push insertion:
-        string push_threshold_in_aggregation;
-        string push_threshold_in_controller_switch;
+        double push_threshold_in_aggregation;
+        double push_threshold_in_controller_switch;
         //Eviction:
         string cache_percentage;
         string eviction_sample_size;
