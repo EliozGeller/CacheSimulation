@@ -22,9 +22,11 @@ package cachesimulation;
 simple Switch
 {
     parameters:
-        int CacheSize;
+        int cache_size;
         int Type; //Tor,Aggregation,Controller Switch
         int threshold;
+        
+        double hit_ratio = 0;
     gates:
         inout port[];
 }

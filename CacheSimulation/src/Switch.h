@@ -83,7 +83,7 @@ class Switch : public cSimpleModule
     long double processing_time_on_data_packet_in_sw;
     long double insertion_delay;
     long double cache_percentage;
-    unsigned long long cache_size;
+    int cache_size;
     int eviction_sample_size;
     long double eviction_delay;
     long double flush_elephant_time;

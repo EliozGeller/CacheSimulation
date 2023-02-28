@@ -40,12 +40,17 @@ void Switch::initialize()
     number_of_ports = gateSize("port");
 
     //start of par:
-    type = (int)par("Type");
+    type = par("Type").intValue();
     elephant_sample_rx = stoi(getParentModule()->par("elephant_sample_rx").stdstringValue());
     processing_time_on_data_packet_in_sw = stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue());
     insertion_delay = stold(getParentModule()->par("insertion_delay").stdstringValue());
     cache_percentage = stold(getParentModule()->par("cache_percentage").stdstringValue());
-    cache_size = stoull(getParentModule()->par("cache_size").stdstringValue());
+    //cache_size = stoull(getParentModule()->par("cache_size").stdstringValue());
+
+    cache_size = par("cache_size").intValue();
+
+
+
     recordScalar("cache_size: ",cache_size);
     eviction_sample_size = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
     eviction_delay = stold(getParentModule()->par("eviction_delay").stdstringValue());
@@ -132,12 +137,13 @@ void Switch::initialize()
 
     estimate_rate_interval = getParentModule()->par("estimate_rate_interval").doubleValue();
     if(threshold != (unsigned long long)(-1) /* infinity */ and threshold != 0){
-        estimate_rate_interval = (1500.0 * 8.0 * 10.0 /*10 packets*/)/(threshold);
+        //estimate_rate_interval = (1500.0 * 8.0 * 10.0 /*10 packets*/)/(threshold);
     }
-    if(type != TOR){
-        //cMessage* m1 = new cMessage("Estimate rate packet");
-        //m1->setKind(ESTIMATE_RATE_PCK);
-        //scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
+    estimate_rate_interval = 100e-6;
+    if(true){
+        cMessage* m1 = new cMessage("Estimate rate packet");
+        m1->setKind(ESTIMATE_RATE_PCK);
+        scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
     }
 
 
@@ -170,7 +176,7 @@ void Switch::handleMessage(cMessage *message)
         flow_count.insert({msg->getDestination(),1});
 
         //insert last message:
-        if(msg->getLast_packet()){
+        if(msg->getLast_packet() and false){ // not in use
            flow_count.erase(msg->getDestination());
            //delete pkt;
            number_of_flows_which_ends_during_the_interval++;
@@ -194,8 +200,9 @@ void Switch::handleMessage(cMessage *message)
 
 
     if(kind_of_packet == INTERVAL_PCK){
-        flow_count_hist.collect(flow_count.size() + number_of_flows_which_ends_during_the_interval);
+        flow_count_hist.collect(flow_count.size());
         number_of_flows_which_ends_during_the_interval = 0;
+        flow_count.clear();
 
         cache_occupancy.collect((double)((double)(cache.size())/cache_size));
         //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
@@ -474,6 +481,29 @@ void Switch::handleMessage(cMessage *message)
         }
         case ESTIMATE_RATE_PCK: //Reset the port-destination counters in window:
         { //delete
+
+            //hit ratio:
+            double hit_ratio = (hit_packets + miss_packets)?(((double)(hit_packets))/((double)(hit_packets + miss_packets))):(0);
+            hit_packets = 0;
+            miss_packets = 0;
+
+            par("hit_ratio").setDoubleValue(hit_ratio);
+
+
+            //print cache content:
+            static ofstream MyFile("switch.txt");
+            MyFile << which_switch_i_am() <<"  hit_ratio = "  << hit_ratio  << "  time = "  <<  simTime() << "\ncache content:" <<  endl;
+
+
+            int i = 0;
+            for (auto it = cache.begin(); simTime() == 3.001 and it != cache.end(); ++it){
+                MyFile << "cache[" <<  i  <<  "] = " << it->first << endl;
+                i++;
+            }
+
+            //
+
+
             for (auto it = cache.begin(); it != cache.end(); ++it) {
                 for (int i = 0; i < number_of_ports; i++) {
                     it->second.port_dest_count[i] = 0;
@@ -517,7 +547,26 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
         it->second.count++;
         it->second.last_time = simTime();
 
-        if(it->second.count > 1 and type == AGGREGATION)cout << "app "  << (int)msg->getApp_type() <<  "  id = "  <<  msg->getId() <<  "  ingressPort = "  <<  ingressPort <<  "  dest = "  <<  msg->getDestination() <<  "  est rate = "  << (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet))  << "  time = "<< simTime() <<endl;
+        //if(it->second.count > 1 and type == AGGREGATION)cout << "app "  << (int)msg->getApp_type() <<  "  id = "  <<  msg->getId() <<  "  ingressPort = "  <<  ingressPort <<  "  dest = "  <<  msg->getDestination() <<  "  est rate = "  << (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet))  << "  time = "<< simTime() <<endl;
+
+
+
+        //!!!!!!!
+        //getParentModule()->getSubmodule("agg",i)
+        //getParentModule()->getSubmodule("tor",i)
+        string child;
+        int port;
+        if(type == AGGREGATION){
+            child = "tor";
+            port = ingressPort - 2;
+        }
+        if(type == CONTROLLERSWITCH){
+            child = "agg";
+            port = ingressPort - 1;
+        }
+
+        //cout << which_switch_i_am() <<"  child = "<< child << "   port = "<< port <<endl;
+        //if(type != TOR and getParentModule()->getSubmodule(child.c_str(),port)->par("hit_ratio").doubleValue() <= threshold and (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= 2.5e9  and it->second.count >= 1){
 
 
 

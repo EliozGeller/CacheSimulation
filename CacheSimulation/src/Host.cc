@@ -113,32 +113,33 @@ void Host::start_flow(simtime_t arrival_time){
     rate = draw_rate(4000); // 4000 - 2.5 G
 
     double prob_of_app_A = 0.5;  //Change!!!!!
-    int app_B_size = average_flow_size;//average_flow_size;
-    inter_arrival_time_between_flows = (simtime_t)((long double)((prob_of_app_A * average_flow_size + (1 - prob_of_app_A) * app_B_size) * 8)/(1.6e12));
+    int app_A_size = 4e6;
+    int app_B_size = 4e6;
+    inter_arrival_time_between_flows = (simtime_t)((long double)((prob_of_app_A * app_A_size + (1 - prob_of_app_A) * app_B_size) * 8)/(1.6e12));
     if(uniform(0,1) <= prob_of_app_A){ //Application A:
 
         app_type = 0;
 
-        flow_size = average_flow_size;//draw_flow_size();
+        flow_size = app_A_size;//draw_flow_size();
         destination = (uint64_t)uniform(5001,policy_size);
 
-        rate = 2.5e9 * 10.0;
+        rate = 2.5e9 * 2;
     }
     else { //Application B:
 
         app_type = 1;
         flow_size = app_B_size;
 
-        int n = 1;
-        int i = n;
+        int range = 10000;
+        int i = 5*range;
         do{
-            destination = (uint64_t)uniform(1,n);
+            destination = (uint64_t)uniform(1,range);
             i--;
         }while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
         //}while(false);
         current_flow[getParentModule()->getIndex()][destination] = true;
 
-        rate = 2.5e9/10.0;
+        rate = 2.5e9/2.0;
     }
 
 
@@ -217,6 +218,13 @@ void Host::handleMessage(cMessage *message)
                }
 
             }
+            if(first and getParentModule()->getIndex() == 0){
+                simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+               simtime_t end_of_flow = simTime() + transmination_time_of_flow;
+               static ofstream MyFile("host.txt");
+               MyFile <<"In Host, dest = "  <<  destination  << "  type = "<<  (int)app_type <<"  rate = "  <<  rate << "  start time = "<< simTime()  << "  end time = "  <<  end_of_flow <<endl;
+            }
+
             first = false;
 
 
