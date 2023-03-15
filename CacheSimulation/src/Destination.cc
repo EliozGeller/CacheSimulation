@@ -219,8 +219,8 @@ void Destination::finish()
    // Calculate the duration in seconds
    auto duration_time = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-   EV << "Simulation took " << duration_time << " seconds" << endl;
-   recordScalar("Simulation duration (in seconds). By chrono library: ",(unsigned long long int)duration_time);
+   EV << "Simulation took " << (duration_time/60.0) << " minutes" << endl;
+   recordScalar("Simulation duration (in minutes). By chrono library: ",(duration_time/60.0));
 
 }
 

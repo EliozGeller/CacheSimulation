@@ -48,6 +48,8 @@ private:
    simtime_t inter_arrival_time_between_flows;
    cMessage *genpack = nullptr;
    bool first;
+   simtime_t flow_start_time;
+   simtime_t flow_end_time;
 
    uint64_t higher_bound_of_subnet;
    uint64_t lower_bound_of_subnet;

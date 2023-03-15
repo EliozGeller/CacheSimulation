@@ -111,7 +111,7 @@ using namespace std;
 typedef struct{
     unsigned long int count;  //count the packets that the rule managed to catch
     unsigned long long int bit_count; // count the bits that the rule managed to catch
-    simtime_t first_packet;   //Intended for estimate the rate for each port-destination flow
+    std::vector<simtime_t> first_packet;   //Intended for estimate the rate for each port-destination flow
     simtime_t last_time;   //Intended for calculation for LRU eviction
     std::vector<double> port_dest_count;  //Intended for estimate the rate for each port-destination flow
 }ruleStruct;

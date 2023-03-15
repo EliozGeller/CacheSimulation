@@ -38,6 +38,7 @@ void Switch::initialize()
 
     //set the number of ports:
     number_of_ports = gateSize("port");
+    cout << "number_of_ports = "  << number_of_ports << endl;
 
     //start of par:
     type = par("Type").intValue();
@@ -141,13 +142,13 @@ void Switch::initialize()
     }
     estimate_rate_interval = 100e-6;
     if(true){
-        cMessage* m1 = new cMessage("Estimate rate packet");
-        m1->setKind(ESTIMATE_RATE_PCK);
-        scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
+        //cMessage* m1 = new cMessage("Estimate rate packet");
+        //m1->setKind(ESTIMATE_RATE_PCK);
+        //scheduleAt(simTime() + START_TIME + estimate_rate_interval,m1);
     }
 
 
-    cout << which_switch_i_am()  << "  th = "  <<  threshold  <<"   " << (threshold >= 100e6) << endl;
+    cout << which_switch_i_am()  << "  th = "  <<  threshold << endl;
 
 
     /*
@@ -379,6 +380,7 @@ void Switch::handleMessage(cMessage *message)
             new_rule.bit_count = 0;
             new_rule.last_time = simTime();
             new_rule.port_dest_count.assign(number_of_ports, 0);
+            new_rule.first_packet.assign(number_of_ports, 0);
             cache.insert({ pck->getRule(), new_rule });
             delete pck;
             break; // end case
@@ -524,7 +526,7 @@ void Switch::fc_send(DataPacket *msg){
     InsertionPacket *conpacket = new InsertionPacket("Insert rule Packet");
     conpacket->setKind(INSERTRULE_PUSH);
     conpacket->setRule(rule);
-    cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
+    //cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
     sendDelayed(conpacket,processing_time_on_data_packet_in_sw, "port$o", arrivalGate); //Model the processing time on a data packet
 }
 int Switch::cache_search(DataPacket *msg,int ingressPort){
@@ -536,14 +538,12 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
     }
     else {// found
 
-        if(!it->second.count){ //set the first packet as the first packet that the rule manage to catch
-            it->second.first_packet = simTime();
-        }
-        else{
-            it->second.port_dest_count[ingressPort] += msg->getBitLength();
-            it->second.bit_count += msg->getBitLength();
+        if(it->second.port_dest_count[ingressPort] == 0){ //set the first packet as the first packet that the rule manage to catch
+            it->second.first_packet[ingressPort] = simTime();
         }
 
+        it->second.port_dest_count[ingressPort] += msg->getBitLength();
+        it->second.bit_count += msg->getBitLength();
         it->second.count++;
         it->second.last_time = simTime();
 
@@ -551,7 +551,7 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
 
 
 
-        //!!!!!!!
+        /*!!!!!!!
         //getParentModule()->getSubmodule("agg",i)
         //getParentModule()->getSubmodule("tor",i)
         string child;
@@ -567,18 +567,20 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
 
         //cout << which_switch_i_am() <<"  child = "<< child << "   port = "<< port <<endl;
         //if(type != TOR and getParentModule()->getSubmodule(child.c_str(),port)->par("hit_ratio").doubleValue() <= threshold and (it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= 2.5e9  and it->second.count >= 1){
+        */
 
 
+        //if(type == CONTROLLERSWITCH)cout << it->second.port_dest_count[ingressPort] << "   ingressPort = "  <<  ingressPort << " dest = "  <<  msg->getDestination() <<  "  vector size = "  <<  it->second.port_dest_count.size() <<endl;
 
         //if( it->second.count > threshold){
         //if(msg->getFlow_size() >= threshold){
         //if(msg->getRate() >= threshold){
         //if(msg->getApp_type() == 0){
         //if((it->second.port_dest_count[ingressPort]/(estimate_rate_interval)) >= threshold){  //port-dest rate estimate
-        if((it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet)) >= threshold  and it->second.count >= 1){  //port-dest rate estimate
+        //***if((it->second.port_dest_count[ingressPort]/(simTime() - it->second.first_packet[ingressPort])) >= threshold  and it->second.port_dest_count[ingressPort] > 10.0*1500.0*8.0){  //port-dest rate estimate
         //if((it->second.bit_count/(simTime().dbl() - it->second.first_packet.dbl())) >= threshold and it->second.count >= 1){  //rate estimate
         //if(false){  //never insert
-        //if(true){  //push fast cache
+        if(true){  //push fast cache
             return THRESHOLDCROSS;
         }
         else {

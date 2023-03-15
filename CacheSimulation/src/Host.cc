@@ -24,7 +24,7 @@
 #include <string>
 
 
-bool current_flow[20][20000] = {0};
+bool current_flow[50][20000] = {0};
 
 
 
@@ -121,26 +121,29 @@ void Host::start_flow(simtime_t arrival_time){
         app_type = 0;
 
         flow_size = app_A_size;//draw_flow_size();
-        destination = (uint64_t)uniform(5001,policy_size);
+        destination = (uint64_t)uniform(10001,policy_size);
 
-        rate = 2.5e9 * 2;
+        rate = 2.5e9 * 4;
     }
     else { //Application B:
 
         app_type = 1;
         flow_size = app_B_size;
 
-        int range = 10000;
+        int range = 2000;
+
+
         int i = 5*range;
         do{
             destination = (uint64_t)uniform(1,range);
             i--;
-        }while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
-        //}while(false);
-        current_flow[getParentModule()->getIndex()][destination] = true;
+        //}while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
+        }while(false);
+        //current_flow[getParentModule()->getIndex()][destination] = true;
 
-        rate = 2.5e9/2.0;
+        rate = 2.5e9/4.0;
     }
+
 
 
 
@@ -167,6 +170,13 @@ void Host::start_flow(simtime_t arrival_time){
     message->setKind(GENERATEPACKET);
 
     scheduleAt(arrival_time,message);
+
+
+
+    //set the start an end time of the flow:
+    flow_start_time = arrival_time;
+    simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
+    flow_end_time = flow_start_time + transmination_time_of_flow;
 }
 
 
@@ -205,26 +215,15 @@ void Host::handleMessage(cMessage *message)
 
             //Checking whether the flow ends before the start of the time
             else{
-               simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
-               simtime_t end_of_flow = simTime() + transmination_time_of_flow;
-               if(end_of_flow < START_TIME) //measure if the flow will end before the start time
+               if(flow_end_time < START_TIME) //measure if the flow will end before the start time
                {
                    simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
                    getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
                    start_flow(start_time);
-
                    return;
                }
-
             }
-            if(first and getParentModule()->getIndex() == 0){
-                simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
-               simtime_t end_of_flow = simTime() + transmination_time_of_flow;
-               static ofstream MyFile("host.txt");
-               MyFile <<"In Host, dest = "  <<  destination  << "  type = "<<  (int)app_type <<"  rate = "  <<  rate << "  start time = "<< simTime()  << "  end time = "  <<  end_of_flow <<endl;
-            }
-
             first = false;
 
 
