@@ -85,6 +85,11 @@ network Network
         string size_distribution;
         double scale;
         double estimate_rate_interval;
+        double prob_of_app_A;
+        int packet_index_for_decision_Agg;
+        int packet_index_for_decision_cosw;
+        string algorithm;
+        int diversity_th;
 
 
         //end simulation parameters
