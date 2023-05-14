@@ -95,9 +95,9 @@ void Hub::initialize()
     if(record_traffic or create_offline_traffic){
         string name = "traffic";
 
-        if(record_traffic)traffic_file.open(name + my_to_string((int)getParentModule()->getIndex()) + ".csv");
+        if(record_traffic)traffic_file.open(name + to_string((int)getParentModule()->getIndex()) + ".csv");
         //if(record_traffic)traffic_file.open("a.csv");
-        if(create_offline_traffic)traffic_file_create.open(name + my_to_string((int)getParentModule()->getIndex()) + ".csv", ios::in);
+        if(create_offline_traffic)traffic_file_create.open(name + to_string((int)getParentModule()->getIndex()) + ".csv", ios::in);
         //if(create_offline_traffic)traffic_file_create.open("a.csv", ios::in);
 
 
@@ -199,9 +199,10 @@ void Hub::handleMessage(cMessage *msg)
 
 
        traffic_structure_current_index++;
-       if(traffic_structure_current_index == TRAFFIC_STRUCTURE_SIZE){
+       if(traffic_structure_current_index == TRAFFIC_STRUCTURE_SIZE - 1){
            for(unsigned int i = 0; i < TRAFFIC_STRUCTURE_SIZE;i++){
                traffic_file <<  traffic_structure[i] << endl;
+               traffic_structure[i] = "";
            }
            traffic_structure_current_index = 0;
        }
@@ -262,7 +263,19 @@ void Hub::finish(){
     EV << "Bandwidth in Hub: "<< bandwidth_hist.getMean()<< "bps"<< endl;
 
     bandwidth_hist.recordAs("bandwidth hist");
+
+
+    if(record_traffic){
+               for(unsigned int i = 0; (i < TRAFFIC_STRUCTURE_SIZE) and (traffic_structure[i] != "");i++){
+                   traffic_file <<  traffic_structure[i] << endl;
+                   traffic_structure[i] = "";
+               }
+    }
+
     traffic_file.close();
+
+
+
 
 
 }

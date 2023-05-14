@@ -54,6 +54,7 @@ private:
    uint64_t higher_bound_of_subnet;
    uint64_t lower_bound_of_subnet;
    int subnet_size = 5000;
+   double prob_of_app_A;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);

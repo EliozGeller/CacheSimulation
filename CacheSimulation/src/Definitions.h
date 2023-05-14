@@ -113,7 +113,9 @@ typedef struct{
     unsigned long long int bit_count; // count the bits that the rule managed to catch
     std::vector<simtime_t> first_packet;   //Intended for estimate the rate for each port-destination flow
     simtime_t last_time;   //Intended for calculation for LRU eviction
+    simtime_t insertion_time;
     std::vector<double> port_dest_count;  //Intended for estimate the rate for each port-destination flow
+    uint64_t rule_diversity = 0;
 }ruleStruct;
 
 //Elephant struct
@@ -150,4 +152,5 @@ int rate_to_bin(long double rate);
 int sign(double x);
 std::string mysplitstring(std::string str,std::string delimiter,int position_of_word);
 void convert_xl_to_csv();
+int count_one(uint64_t x);
 

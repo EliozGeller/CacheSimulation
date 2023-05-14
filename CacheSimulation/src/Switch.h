@@ -54,12 +54,16 @@ class Switch : public cSimpleModule
     unsigned long long int hit_packets = 0;
     unsigned long long int miss_packets = 0;
     double last_hit_ratio = 787;//positive mean step to the right and negative mean step to the left
+    int packet_index_for_decision;
+    string algorithm;
+    int diversity_th;
     cOutVector best_flow_size;
     cOutVector misscount;
     unsigned long long int bandwidth_elephant_threshold;
     simtime_t already_requested_threshold;
     cHistogram cache_occupancy;
     cHistogram number_of_insertions;
+    cHistogram life_time_of_a_rule;
 
     int index_flow_size = 0;//delete
     int sizes[16] = {1177 , 4264 , 15443 , 28000 , 37323 , 51067 , 74908 , 93293 ,

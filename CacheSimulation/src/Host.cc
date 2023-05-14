@@ -95,6 +95,8 @@ void Host::initialize()
     scheduleAt(simTime() + START_TIME + 0.001,pck);
 
 
+    prob_of_app_A = getParentModule()->getParentModule()->par("prob_of_app_A").doubleValue();
+
     start_flow(start_time);
 }
 void Host::start_flow(simtime_t arrival_time){
@@ -112,24 +114,28 @@ void Host::start_flow(simtime_t arrival_time){
     //set the parameters of the flow:
     rate = draw_rate(4000); // 4000 - 2.5 G
 
-    double prob_of_app_A = 0.5;  //Change!!!!!
-    int app_A_size = 4e6;
-    int app_B_size = 4e6;
+    //prob_of_app_A = 0.5;  //Change!!!!!
+    int app_A_size = average_flow_size;
+    int app_B_size = average_flow_size;
     inter_arrival_time_between_flows = (simtime_t)((long double)((prob_of_app_A * app_A_size + (1 - prob_of_app_A) * app_B_size) * 8)/(1.6e12));
     if(uniform(0,1) <= prob_of_app_A){ //Application A:
 
         app_type = 0;
-
-        flow_size = app_A_size;//draw_flow_size();
+        flow_size = draw_flow_size();
+        //rate = 2.5e9 * 4;
+        rate = 4*draw_rate(4000); //mean = 2.5e9 * 4
         destination = (uint64_t)uniform(10001,policy_size);
-
-        rate = 2.5e9 * 4;
     }
     else { //Application B:
-
         app_type = 1;
         flow_size = app_B_size;
+        //rate = 2.5e9/4.0;
+        //rate = (long double)uniform(100e6,2*(2.5e9 / 4) - 100e6);
+        rate = draw_rate(4000)/4; //mean = 2.5e9 / 4
 
+
+
+        //set the destination:
         int range = 2000;
 
 
@@ -137,11 +143,11 @@ void Host::start_flow(simtime_t arrival_time){
         do{
             destination = (uint64_t)uniform(1,range);
             i--;
-        //}while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
-        }while(false);
-        //current_flow[getParentModule()->getIndex()][destination] = true;
+        }while(current_flow[getParentModule()->getIndex()][destination] and i >= 0);
+        //}while(false);
+        current_flow[getParentModule()->getIndex()][destination] = true;
 
-        rate = 2.5e9/4.0;
+
     }
 
 
@@ -169,7 +175,7 @@ void Host::start_flow(simtime_t arrival_time){
     genpack = message;
     message->setKind(GENERATEPACKET);
 
-    scheduleAt(arrival_time,message);
+
 
 
 
@@ -177,6 +183,8 @@ void Host::start_flow(simtime_t arrival_time){
     flow_start_time = arrival_time;
     simtime_t transmination_time_of_flow =  ((double)flow_size*8)/rate + (number_of_flowlet - 1)*inter_arrival_time_between_flowlets.dbl();
     flow_end_time = flow_start_time + transmination_time_of_flow;
+
+    scheduleAt(arrival_time,message);
 }
 
 
@@ -220,6 +228,7 @@ void Host::handleMessage(cMessage *message)
                    simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
                    getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
+                   if(start_time < simTime())cout << "!!!!ERROR!!!!\nstart_time is in the past.\n flow_end_time = "  <<  flow_end_time  <<  "  rate = "  <<  rate <<  endl;
                    start_flow(start_time);
                    return;
                }
@@ -239,7 +248,7 @@ void Host::handleMessage(cMessage *message)
                 simtime_t start_time = (simtime_t)(getParentModule()->par("last_flow_appearance").doubleValue() + exponential(inter_arrival_time_between_flows));
                 getParentModule()->par("last_flow_appearance").setDoubleValue(start_time.dbl());
 
-
+                if(start_time < simTime())cout << "!!!!ERROR2!!!!\nstart_time is in the past.\nflow_end_time = "  <<  flow_end_time  <<  "  rate = "  <<  rate << "  inter_arrival_time_between_flows = "  <<  inter_arrival_time_between_flows <<endl;
                 start_flow(start_time);
                 //end start new flow
                 return;
