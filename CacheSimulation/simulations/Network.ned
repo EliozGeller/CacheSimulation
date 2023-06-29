@@ -81,7 +81,7 @@ network Network
 
         bool record_traffic;
         bool create_offline_traffic;
-        
+
         string size_distribution;
         double scale;
         double estimate_rate_interval;
@@ -90,6 +90,7 @@ network Network
         int packet_index_for_decision_cosw;
         string algorithm;
         int diversity_th;
+       	int count_th;
 
 
         //end simulation parameters
@@ -106,7 +107,7 @@ network Network
         }
     submodules:
         controller: Controller {
-            @display("p=254,430;i=device/server");
+            @display("p=254,430;i=device/server;is=l");
         }
         rack[NumOfToRs]: Rack {
             @display("p=363,430,r,50;i=device/router_l");
