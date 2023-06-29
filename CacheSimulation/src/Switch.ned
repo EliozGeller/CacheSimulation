@@ -22,7 +22,7 @@ package cachesimulation;
 simple Switch
 {
     parameters:
-        int cache_size;
+        double max_cache_size;
         int Type; //Tor,Aggregation,Controller Switch
         int threshold;
         

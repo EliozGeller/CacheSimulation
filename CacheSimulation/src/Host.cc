@@ -69,7 +69,7 @@ void Host::initialize()
 
     //inter_arrival_time_between_flowlets =  (simtime_t)stold( getParentModule()->getParentModule()->par("inter_arrival_time_between_flowlets").stdstringValue());
 
-    policy_size =  stoull(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
+    policy_size =  stold(getParentModule()->getParentModule()->par("policy_size").stdstringValue());
     large_flow = stoull(getParentModule()->getParentModule()->par("large_flow").stdstringValue()); /*100 Mbyte*/
 
 
@@ -97,6 +97,7 @@ void Host::initialize()
 
     prob_of_app_A = getParentModule()->getParentModule()->par("prob_of_app_A").doubleValue();
 
+
     start_flow(start_time);
 }
 void Host::start_flow(simtime_t arrival_time){
@@ -123,12 +124,12 @@ void Host::start_flow(simtime_t arrival_time){
         app_type = 0;
         flow_size = draw_flow_size();
         //rate = 2.5e9 * 4;
-        rate = 4*draw_rate(4000); //mean = 2.5e9 * 4
+        rate = draw_rate(4000)*4; //mean = 2.5e9 * 4
         destination = (uint64_t)uniform(10001,policy_size);
     }
     else { //Application B:
         app_type = 1;
-        flow_size = app_B_size;
+        flow_size = average_flow_size;
         //rate = 2.5e9/4.0;
         //rate = (long double)uniform(100e6,2*(2.5e9 / 4) - 100e6);
         rate = draw_rate(4000)/4; //mean = 2.5e9 / 4
@@ -268,7 +269,7 @@ void Host::handleMessage(cMessage *message)
           //delete message;
           //m = new cMessage("Generate packet message");
           genpack = message;
-          scheduleAt(simTime() + /*exponential(arrival_time)*/ arrival_time ,message);
+          scheduleAt(simTime() + exponential(arrival_time) ,message);
 
           break;
           }//end case

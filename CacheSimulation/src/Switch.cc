@@ -32,14 +32,14 @@ void Switch::initialize()
     insertion_count.setName("insertion_count");
     best_flow_size.setName("best_flow_size");
 
-    life_time_of_a_rule.setName("life_time_of_a_rule");
+    activity_time_of_a_rule_A.setName("activity_time_of_a_rule_A");
+    activity_time_of_a_rule_B.setName("activity_time_of_a_rule_B");
 
     //set id:
     id = getIndex();
 
     //set the number of ports:
     number_of_ports = gateSize("port");
-    cout << "number_of_ports = "  << number_of_ports << endl;
 
     //start of par:
     type = par("Type").intValue();
@@ -47,9 +47,11 @@ void Switch::initialize()
     processing_time_on_data_packet_in_sw = stold(getParentModule()->par("processing_time_on_data_packet_in_sw").stdstringValue());
     insertion_delay = stold(getParentModule()->par("insertion_delay").stdstringValue());
     cache_percentage = stold(getParentModule()->par("cache_percentage").stdstringValue());
-    //cache_size = stoull(getParentModule()->par("cache_size").stdstringValue());
 
-    cache_size = par("cache_size").intValue();
+
+    max_cache_size = (int)par("max_cache_size").doubleValue();
+
+
 
 
     if(type == AGGREGATION)packet_index_for_decision = getParentModule()->par("packet_index_for_decision_Agg").intValue();
@@ -60,7 +62,7 @@ void Switch::initialize()
 
 
 
-    recordScalar("cache_size: ",cache_size);
+    recordScalar("max_cache_size: ",max_cache_size);
     eviction_sample_size = stoi(getParentModule()->par("eviction_sample_size").stdstringValue());
     eviction_delay = stold(getParentModule()->par("eviction_delay").stdstringValue());
     flush_elephant_time = stold(getParentModule()->par("flush_elephant_time").stdstringValue());
@@ -74,7 +76,7 @@ void Switch::initialize()
         before_hit_byte_count[i] = 0;
         after_hit_byte_count[i] = 0;
     }
-    policy_size = stoull(getParentModule()->par("policy_size").stdstringValue());
+    policy_size = stold(getParentModule()->par("policy_size").stdstringValue());
     bandwidth_elephant_threshold = stoull(getParentModule()->par("bandwidth_elephant_threshold").stdstringValue());
     EV << "bandwidth_elephant_threshold = " << bandwidth_elephant_threshold << endl;
     already_requested_threshold = (simtime_t)stold( getParentModule()->par("already_requested_threshold").stdstringValue());;
@@ -156,7 +158,6 @@ void Switch::initialize()
     }
 
 
-    cout << which_switch_i_am()  << "  th = "  <<  threshold << endl;
 
 
     /*
@@ -213,8 +214,8 @@ void Switch::handleMessage(cMessage *message)
         number_of_flows_which_ends_during_the_interval = 0;
         flow_count.clear();
 
-        cache_occupancy.collect((double)((double)(cache.size())/cache_size));
-        //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
+        cache_occupancy.collect((double)((double)(cache.size())/(max_cache_size)?max_cache_size:1));
+        //if( which_switch_i_am() == " ToR[0] ")std::cout << "c = " << (double)((double)(cache.size())/max_cache_size) <<"    " << cache.size() <<"    " << cache.size() << which_switch_i_am() <<endl;
 
         number_of_insertions.collect(insertion_count_pull + insertion_count_push);
         insertion_count.collect(((insertion_count_pull + insertion_count_push) ?((long double)(insertion_count_pull))/((long double)(insertion_count_pull + insertion_count_push)) : 0));
@@ -296,6 +297,9 @@ void Switch::handleMessage(cMessage *message)
 
 
 
+
+
+
     //TX:
     switch(kind_of_packet){
         case HITPACKET:
@@ -307,6 +311,10 @@ void Switch::handleMessage(cMessage *message)
         }
         case DATAPACKET:
         {
+
+            //
+            EV << which_switch_i_am()  <<  "  t = "  <<  simTime()  <<  endl;
+            //
             msg = check_and_cast<DataPacket *>(message);
             switch(cache_search(msg,ingressPort)){
               case THRESHOLDCROSS: //in case of THRESHOLDCROSS also case of FOUND will activate
@@ -319,6 +327,8 @@ void Switch::handleMessage(cMessage *message)
                   hit_packets++;
                   break;
               case NOTFOUND:
+                  int switch_index_type = type_of_switch_to_index(type);
+                  msg->setMiss_path(switch_index_type,id);
                   egressPort = miss_table_search(msg->getDestination());
                   msg->setMiss_hop(msg->getMiss_hop() + 1);
                   miss_packets++;
@@ -327,6 +337,65 @@ void Switch::handleMessage(cMessage *message)
 
             sendDelayed(msg,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
             break; // end case
+        }
+        case GENERAL_INSERTRULE:
+        {
+            pck = check_and_cast<InsertionPacket *>(message);
+
+            bubble(pck->getInsert_to_switch(type_of_switch_to_index(type)));
+
+            string action  = pck->getInsert_to_switch(type_of_switch_to_index(type));
+            if(action == "insert"){//insert the rule:
+                cache_size_t++;
+                //Schedule an insertion
+                pck = check_and_cast<InsertionPacket *>(message);
+                m1 = new InsertionPacket("Insertion delay packet");
+                m1->setKind(INSERTION_DELAY_PCK);
+                m1->setRule(pck->getRule()); //not necessary
+                scheduleAt(simTime() + insertion_delay,m1);
+
+
+                if(cache_size_t >= 0.8 * max_cache_size){
+                    if(cache_size_t < 0.9 * max_cache_size){
+                        s = eviction_sample_size ;
+                    }
+                    else {
+                        s = 1;
+                    }
+                    //uint64_t rule_for_eviction = which_rule_to_evict(s);
+
+                    //Schedule an eviction
+                    m2 = new InsertionPacket("Eviction delay packet");
+                    m2->setKind(EVICTION_DELAY_PCK);
+                    m2->setS(s);
+                    scheduleAt(simTime() + s*eviction_delay,m2);
+
+                }
+                //end Schedule an insertion
+            }
+            if(action == "remove"){//remove the rule:
+                //Schedule an eviction
+                m2 = new InsertionPacket("Eviction delay packet");
+                m2->setKind(EVICTION_DELAY_PCK);
+                m2->setLRU(false);
+                m2->setRule(pck->getRule());
+                scheduleAt(simTime() + eviction_delay,m2);
+            }
+
+
+
+
+            //forward the packet or delete it:
+            if(type == TOR){
+                delete pck; //delete the packet if it's in the ToR
+            }
+            else{//forward the packet down stream:
+                pck->setDestination(pck->getPath(type_of_switch_to_index(type) - 1));
+                pck->setSwitch_type(index_of_switch_to_type(type_of_switch_to_index(type) - 1));
+                egressPort = internal_forwarding_port(pck);
+                sendDelayed(pck,processing_time_on_data_packet_in_sw, "port$o", egressPort); //Model the processing time on a data packet
+            }
+            break;
         }
         case INSERTRULE_PULL:
         {
@@ -339,10 +408,10 @@ void Switch::handleMessage(cMessage *message)
             }
             //break; //in purpose
         }
-        case INSERTRULE_PUSH: // The real insertion"
+        case INSERTRULE_PUSH: // The real insertion:
         {
 
-            //statics:
+           //statics:
            if(kind_of_packet == INSERTRULE_PULL){
                insertion_count_pull++;
            }
@@ -360,8 +429,8 @@ void Switch::handleMessage(cMessage *message)
             scheduleAt(simTime() + insertion_delay,m1);
 
 
-            if(cache_size_t >= 0.8 * cache_size){
-                if(cache_size_t < 0.9 * cache_size){
+            if(cache_size_t >= 0.8 * max_cache_size){
+                if(cache_size_t < 0.9 * max_cache_size){
                     s = eviction_sample_size ;
                 }
                 else {
@@ -393,24 +462,38 @@ void Switch::handleMessage(cMessage *message)
             new_rule.rule_diversity = 0;
             cache.insert({ pck->getRule(), new_rule });
             delete pck;
+            bubble("rule insertion");
             break; // end case
         }
         case EVICTION_DELAY_PCK: //The real eviction:
         {
             pck = check_and_cast<InsertionPacket *>(message);
-            if(cache.size() >= 0.8 * cache_size){
-                uint64_t rule_for_eviction = which_rule_to_evict( pck->getS() /*s*/);
-
-                life_time_of_a_rule.collect(simTime() - cache[rule_for_eviction].insertion_time);
-
+            uint64_t rule_for_eviction;
+            bool remove_rule = false;
+            if(!pck->getLRU()){//Remove NOT according to LRU, but a specific rule. if so, remove "rule" from the cache:
+                rule_for_eviction = pck->getRule();
+                remove_rule = true;
+            }
+            else {
+                if(cache.size() >= 0.8 * max_cache_size){
+                    rule_for_eviction = which_rule_to_evict( pck->getS() /*s*/);
+                    remove_rule = true;
+                }
+            }
+            if(remove_rule){//Does we going to remove the rule?
+                //activity_time_of_a_rule.collect(cache[rule_for_eviction].last_time - cache[rule_for_eviction].insertion_time);//pick living time of the rule
+                if(rule_for_eviction >= 10001){//App A
+                    activity_time_of_a_rule_A.collect(cache[rule_for_eviction].last_time - cache[rule_for_eviction].insertion_time);//pick living time of the rule
+                }
+                else {//App B
+                    activity_time_of_a_rule_B.collect(cache[rule_for_eviction].last_time - cache[rule_for_eviction].insertion_time);//pick living time of the rule
+                }
                 cache.erase(rule_for_eviction); // evict the rule
                 cache_size_t--;
-
-
-
-
             }
+
             delete pck;
+            bubble("rule eviction");
             break; // end case
 
         }
@@ -483,7 +566,7 @@ void Switch::handleMessage(cMessage *message)
         case LZY_EVICT:
         {
 
-            if(cache.size() >= 0.9 * cache_size){
+            if(cache.size() >= 0.9 * max_cache_size){
                 s = eviction_sample_size ;
                 uint64_t rule_for_eviction = which_rule_to_evict(s);
 
@@ -535,6 +618,7 @@ void Switch::handleMessage(cMessage *message)
     }
 }
 void Switch::fc_send(DataPacket *msg){
+    //this function generate an insert packet in the switch and send it with the corresponds rule to the ingress port.
     cGate *gate = msg->getArrivalGate();
     int arrivalGate;
     if(gate)arrivalGate = gate->getIndex();   //Get arrival port
@@ -571,7 +655,7 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
 
 
 
-        //!!! algorithm list = {"Push" , "Fast" , "Fast n-th" ,"diversity-Push" }!!!!!!!!
+        //!!! algorithm list = {"Push" , "Fast" , "Fast n-th" ,"diversity-Push" ,"non Push"}!!!!!!!!
 
 
         if(algorithm == "Push"){
@@ -583,12 +667,7 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
             }
         }
         if(algorithm == "Fast"){
-            if(true){
-                return THRESHOLDCROSS;
-            }
-            else {
-                return FOUND;
-            }
+            return THRESHOLDCROSS;
         }
         if(algorithm == "Fast n-th"){
             if(it->second.port_dest_count[ingressPort] > packet_index_for_decision*1500.0*8.0){  //fast cach from 10th packet
@@ -605,6 +684,9 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
             else {
                 return FOUND;
             }
+        }
+        if(algorithm == "non Push" or  algorithm == "cFast"){
+            return FOUND;
         }
     }
 }
@@ -728,11 +810,19 @@ void Switch::finish(){
 
     flow_count_hist.recordAs("flow count");
     cache_occupancy.recordAs("cache_occupancy");
-    life_time_of_a_rule.recordAs("life_time_of_a_rule");
+    activity_time_of_a_rule_A.recordAs("activity_time_of_a_rule_A");
+    activity_time_of_a_rule_B.recordAs("activity_time_of_a_rule_B");
 
     int cache_content_by_app_count = 0;
-    for (const auto& pair : cache) {
-            if(pair.first > 10000)cache_content_by_app_count++;
+    for (const auto& rule : cache) {
+            if(rule.first > 10000)cache_content_by_app_count++;
+            if(rule.first >= 10001){//App A
+                activity_time_of_a_rule_A.collect(cache[rule.first].last_time - cache[rule.first].insertion_time);//pick living time of the rule
+            }
+            else {//App B
+                activity_time_of_a_rule_B.collect(cache[rule.first].last_time - cache[rule.first].insertion_time);//pick living time of the rule
+            }
+
     }
 
     recordScalar("cache_content_by_app: ", ((double)cache_content_by_app_count)/((double)cache.size()));

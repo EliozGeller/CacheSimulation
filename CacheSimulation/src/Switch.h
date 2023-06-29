@@ -63,7 +63,8 @@ class Switch : public cSimpleModule
     simtime_t already_requested_threshold;
     cHistogram cache_occupancy;
     cHistogram number_of_insertions;
-    cHistogram life_time_of_a_rule;
+    cHistogram activity_time_of_a_rule_A;
+    cHistogram activity_time_of_a_rule_B;
 
     int index_flow_size = 0;//delete
     int sizes[16] = {1177 , 4264 , 15443 , 28000 , 37323 , 51067 , 74908 , 93293 ,
@@ -87,7 +88,7 @@ class Switch : public cSimpleModule
     long double processing_time_on_data_packet_in_sw;
     long double insertion_delay;
     long double cache_percentage;
-    int cache_size;
+    int max_cache_size;
     int eviction_sample_size;
     long double eviction_delay;
     long double flush_elephant_time;

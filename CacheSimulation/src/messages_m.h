@@ -27,6 +27,7 @@ namespace cachesimulation {
  *     uint64_t destination;
  *     uint64_t external_destination = 0;
  *     int miss_hop = 0;
+ *     int miss_path[3]; //{ToR,Agg,Controllerswitch}
  *     uint8_t app_type;
  *     string id;
  *     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
@@ -43,6 +44,7 @@ class DataPacket : public ::omnetpp::cPacket
     uint64_t destination;
     uint64_t external_destination;
     int miss_hop;
+    int miss_path[3];
     uint8_t app_type;
     ::omnetpp::opp_string id;
     int request;
@@ -74,6 +76,9 @@ class DataPacket : public ::omnetpp::cPacket
     virtual void setExternal_destination(uint64_t external_destination);
     virtual int getMiss_hop() const;
     virtual void setMiss_hop(int miss_hop);
+    virtual unsigned int getMiss_pathArraySize() const;
+    virtual int getMiss_path(unsigned int k) const;
+    virtual void setMiss_path(unsigned int k, int miss_path);
     virtual uint8_t getApp_type() const;
     virtual void setApp_type(uint8_t app_type);
     virtual const char * getId() const;
@@ -94,7 +99,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const DataPacket& obj) {obj
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:35</tt> by nedtool.
+ * Class generated from <tt>messages.msg:36</tt> by nedtool.
  * <pre>
  * packet InsertionPacket
  * {
@@ -103,6 +108,9 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, DataPacket& obj) {obj.par
  *     int switch_type; //ToR,Aggregation or controller switch
  *     int destination; //The switch id
  *     int s;
+ *     string insert_to_switch[3];//{ToR,Agg,Controllerswitch}."insert" means to insert the rule into the switch,"remove" means to remove the rule from the switch and "null" is do nothing
+ *     int path[3]; //{ToR,Agg,Controllerswitch}
+ *     bool LRU = true; //Indicates whether to exclude a rule ри LRU or a specific one, if true then it will exclude according to LRU, if false it will remove "rule"
  * }
  * </pre>
  */
@@ -114,6 +122,9 @@ class InsertionPacket : public ::omnetpp::cPacket
     int switch_type;
     int destination;
     int s;
+    ::omnetpp::opp_string insert_to_switch[3];
+    int path[3];
+    bool LRU;
 
   private:
     void copy(const InsertionPacket& other);
@@ -142,13 +153,21 @@ class InsertionPacket : public ::omnetpp::cPacket
     virtual void setDestination(int destination);
     virtual int getS() const;
     virtual void setS(int s);
+    virtual unsigned int getInsert_to_switchArraySize() const;
+    virtual const char * getInsert_to_switch(unsigned int k) const;
+    virtual void setInsert_to_switch(unsigned int k, const char * insert_to_switch);
+    virtual unsigned int getPathArraySize() const;
+    virtual int getPath(unsigned int k) const;
+    virtual void setPath(unsigned int k, int path);
+    virtual bool getLRU() const;
+    virtual void setLRU(bool LRU);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const InsertionPacket& obj) {obj.parsimPack(b);}
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, InsertionPacket& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:44</tt> by nedtool.
+ * Class generated from <tt>messages.msg:48</tt> by nedtool.
  * <pre>
  * packet Data_for_partition
  * {
@@ -187,7 +206,7 @@ inline void doParsimPacking(omnetpp::cCommBuffer *b, const Data_for_partition& o
 inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Data_for_partition& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>messages.msg:49</tt> by nedtool.
+ * Class generated from <tt>messages.msg:53</tt> by nedtool.
  * <pre>
  * packet Partition_update_msg
  * {

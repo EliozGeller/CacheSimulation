@@ -33,15 +33,26 @@ void Controller::initialize()
 
 
     //set all parameters from csv file;
+    num_of_ToRs = getParentModule()->par("NumOfToRs").intValue();
     set_all_parameters();
     //initialization_start_time_for_flows();
+
+    algorithm = getParentModule()->par("algorithm").stdstringValue();
+
+    diversity_th = getParentModule()->par("diversity_th").intValue();
+    count_th = getParentModule()->par("count_th").intValue();
+
+    recordScalar("prob_of_app_A: ",  getParentModule()->par("prob_of_app_A").doubleValue());
+
+    policy_size =  stold(getParentModule()->par("policy_size").stdstringValue());
+    set_controller_policy(policy_size);
+
     byte_counter = 0;
 
     // Define the initial partition
     miss_table_size = getParentModule()->par("NumOfAggregation");
     partition = new partition_rule[miss_table_size];
 
-    uint64_t policy_size =  stoull(getParentModule()->par("policy_size").stdstringValue());
 
     uint64_t last = 0;
     uint64_t diff = (uint64_t)(policy_size/(int)(getParentModule()->par("NumOfAggregation")));
@@ -86,18 +97,80 @@ void Controller::handleMessage(cMessage *message)
     Data_for_partition *pkt;
     switch(message->getKind()){
     case DATAPACKET:
+    {
         msg = check_and_cast<DataPacket *>(message);
-        byte_counter += msg->getByteLength();
-        conpacket = new InsertionPacket("Insert rule Packet");
-        conpacket->setKind(INSERTRULE_PUSH);
-        conpacket->setRule(msg->getDestination());
-        sendDelayed(conpacket,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
+
+        //Forward the packet toward the destination:
         msg->setExternal_destination(1);
         msg->setKind(HITPACKET);
         msg->setName("Hit packet");
         sendDelayed(msg,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
+
+
+        byte_counter += msg->getByteLength();
+
+
+        if(algorithm == "cFast"){
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
+            if(uniform(0,1) <= 0.5){
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");//insert to ToR
+            }
+            else {
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
+            }
+            return;
+        }
+
+        //strat of diversity algorithm:
+        int r = msg->getDestination();
+        int i_index_ToR = msg->getMiss_path(0);
+        int r_count = ++controller_policy[r].count[i_index_ToR];  //to increment and than store
+
+        if(r_count  >= count_th){
+            controller_policy[r].diversity[i_index_ToR] = true;
+            int r_diversity = 0;//count thr r_diversity
+            for(int i = 0;i < num_of_ToRs;i++){
+                r_diversity += controller_policy[r].diversity[i];
+            }
+            if(r_diversity >= diversity_th){
+                //cout << "Get in : r_diversity = " << r_diversity << "  diversity_th = "<< diversity_th << "  r_count = "  <<  r_count <<  "   count_th = "  <<  count_th  <<  endl;
+                //remove r from all ToRs and insert r to the Aggregation
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
+                for(int i = 0; i < num_of_ToRs;i++){
+                    send_rule(r,msg->getMiss_path(1),i,"null","null","remove");//remove from all ToRs
+                }
+
+                //reset diversity TH:
+                for(int i = 0;i < num_of_ToRs;i++){
+                    controller_policy[r].diversity[i] = 0;
+                }
+            }
+            else{//insert r to the ToR:
+                if(uniform(0,1) <= 0.5){
+                    send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");//insert to ToR
+                }
+                else {
+                    //remove r from all ToRs and insert r to the Aggregation
+                    send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
+                    for(int i = 0; i < num_of_ToRs;i++){
+                        send_rule(r,msg->getMiss_path(1),i,"null","null","remove");//remove from all ToRs
+                    }
+
+                    //reset diversity TH:
+                    for(int i = 0;i < num_of_ToRs;i++){
+                        controller_policy[r].diversity[i] = 0;
+                    }
+                }
+            }
+            controller_policy[r].count[i_index_ToR] = 0;
+
+        }
+
         break;
+    }
     case DATA_FOR_PARTITION://change
+    {
         pkt = check_and_cast<Data_for_partition *>(message);
         delete pkt;
         /*
@@ -106,7 +179,7 @@ void Controller::handleMessage(cMessage *message)
         sendDelayed(pkt, PARTITION_RATE, "port$o", 0);//
         */
         break;
-
+    }
     case RULE_REQUEST:
     {
         conpacket = check_and_cast<InsertionPacket *>(message);
@@ -140,14 +213,42 @@ void Controller::handleMessage(cMessage *message)
     }
 }
 
+void Controller::send_rule(uint64_t rule,int agg_destination,int tor_destination,string action_con_sw,string action_agg,string action_tor){
+    //preper the insertion pck:
+    InsertionPacket *conpacket = new InsertionPacket("Insert rule Packet");
+    conpacket->setKind(GENERAL_INSERTRULE);
+    conpacket->setRule(rule);
+    //set the path of the insert packet:
+    conpacket->setPath(1,agg_destination);
+    conpacket->setPath(0,tor_destination);
+
+    //Fast: insert to each element in the system
+    conpacket->setInsert_to_switch(0, action_tor.c_str()); //remove the rule from the ToR
+    conpacket->setInsert_to_switch(1, action_agg.c_str()); //insert the rule into the Agg
+    conpacket->setInsert_to_switch(2, action_con_sw.c_str());//do nothing to the controller switch
+    sendDelayed(conpacket,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
+
+    insertion_rate++;//Add to statistic
+}
+
+void Controller::set_controller_policy(uint64_t policy_size){ //set and reset the data set in the controller per each rule.
+    controller_policy.clear();
+
+    for(uint64_t i = 0; i < policy_size; i++){
+        controller_rule r;
+        controller_policy[i] = r;
+    }
+}
+
 
 void Controller::set_all_parameters(){
     string s;
     vector<vector<string>> data_file = read_data_file(PATH_DATA);
 
-
-    s = get_parameter(data_file,"Policy size");
-    getParentModule()->par("policy_size").setStringValue(s);
+    if(getParentModule()->par("policy_size").stdstringValue() == ""){
+        s = get_parameter(data_file,"Policy size");
+        getParentModule()->par("policy_size").setStringValue(s);
+    }
 
     if(getParentModule()->par("cache_size").stdstringValue() == ""){
         s = get_parameter(data_file,"Cache size");
@@ -286,6 +387,8 @@ void Controller::finish()
     delete[] partition;
 
     recordScalar("INTERVAL: ", INTERVAL);
+    recordScalar("insertion_rate: ", (long double)(insertion_rate)/((simTime().dbl() - START_TIME)));
+
     bandwidth_hist.recordAs("Total_bandwidth_hist");
 }
 

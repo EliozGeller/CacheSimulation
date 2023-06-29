@@ -2,6 +2,16 @@
 #include "Definitions.h"
 
 
+int type_of_switch_to_index(int type){
+    return (type - 1001); // ToR = 0, Agg = 1, conswitch = 2. Do not change the value of the defines TOR,AGGREGATION,CONTROLLERSWITCH!!!!
+}
+
+int index_of_switch_to_type(int type){
+    return (type + 1001); // ToR = 1001, Agg = 1002, conswitch = 1003. Do not change the value of the defines TOR,AGGREGATION,CONTROLLERSWITCH!!!!
+}
+
+
+
 uint64_t ip_to_int( std::string s){
     uint64_t result = 0;
     std::string delimiter = ".";

@@ -87,6 +87,8 @@ using namespace std;
 #define RECORD_OR_CREATE_TRAFFIC_PCK 16
 #define BOUNDS_IN_HOSTS_PCK 17
 #define ESTIMATE_RATE_PCK 18
+#define GENERAL_INSERTRULE 19
+
 
 
 
@@ -136,6 +138,14 @@ typedef struct{
     int port; //egress port
 }partition_rule;
 
+//The controller will store the following data in the rules database:
+typedef struct{
+    //bool from_single_sources = false; //store if the rule is from single source, false is also the initially state
+    //int source;
+    int count[20] = {0};
+    bool diversity[20] = {false};
+}controller_rule;
+
 
 
 //General Functions:
@@ -153,4 +163,7 @@ int sign(double x);
 std::string mysplitstring(std::string str,std::string delimiter,int position_of_word);
 void convert_xl_to_csv();
 int count_one(uint64_t x);
+int type_of_switch_to_index(int type); //returns the index of the switch according to type.ToR = 0, Agg = 1, conswitch = 2
+int index_of_switch_to_type(int type); //returns the type of the switch according to index.
+
 

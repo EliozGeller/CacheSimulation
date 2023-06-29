@@ -22,6 +22,7 @@ packet DataPacket
     uint64_t destination;
     uint64_t external_destination = 0;
     int miss_hop = 0;
+    int miss_path[3]; //{ToR,Agg,Controllerswitch}
     uint8_t app_type;
     string id;
     int request = 0; //Indicates whether this is an elephant packet and whether the switch wishes to insert the appropriate rule
@@ -38,6 +39,9 @@ packet InsertionPacket
     int switch_type; //ToR,Aggregation or controller switch
     int destination; //The switch id
     int s;
+    string insert_to_switch[3];//{ToR,Agg,Controllerswitch}."insert" means to insert the rule into the switch,"remove" means to remove the rule from the switch and "null" is do nothing
+    int path[3]; //{ToR,Agg,Controllerswitch}
+    bool LRU = true; //Indicates whether to exclude a rule ри LRU or a specific one, if true then it will exclude according to LRU, if false it will remove "rule"
 }
 
 packet Data_for_partition

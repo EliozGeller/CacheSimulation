@@ -19,6 +19,7 @@
 #include <omnetpp.h>
 #include "Definitions.h"
 #include "messages_m.h"
+#include <map>
 
 using namespace omnetpp;
 
@@ -30,11 +31,19 @@ namespace cachesimulation {
 class Controller : public cSimpleModule
 {
   private:
+    uint64_t policy_size;
+    int num_of_ToRs;
     simtime_t processing_time_on_data_packet_in_controller;
     unsigned long long int byte_counter;
+    string algorithm;
     partition_rule* partition;
     int miss_table_size;
     cHistogram bandwidth_hist;
+    std::map<uint64_t, controller_rule> controller_policy;
+    uint64_t insertion_rate = 0;
+
+    int diversity_th;
+    int count_th;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
@@ -43,6 +52,8 @@ class Controller : public cSimpleModule
     virtual void update_miss_forwarding();
     virtual void set_all_parameters();
     virtual void initialization_start_time_for_flows();
+    virtual void set_controller_policy(uint64_t policy_size);
+    virtual void send_rule(uint64_t rule,int agg_destination,int tor_destination,string action_con_sw,string action_agg,string action_tor);
     //virtual uint64_t draw_flow_size();
 };
 
