@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/CacheSimulation/simulations/PaperResult/diversity p = 0.5 pAlg = 0.5 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 300/scalar-file.vec"/>
+    <inputs name="/CacheSimulation/simulations/PaperResult/diversity p = 0.5 pAlg = 0.5 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 300/scalar-file.sca"/>
+  </inputs>
+  <datasets/>
+  <chartSheets/>
+</scave:Analysis>
