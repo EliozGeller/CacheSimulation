@@ -81,6 +81,10 @@ network Network
 
         bool record_traffic;
         bool create_offline_traffic;
+        
+        //measure the insertion rate:
+        double insertion_count = 0;
+        double total_insertion_count_address = 0;
 
         string size_distribution;
         double scale;
@@ -90,7 +94,8 @@ network Network
         int packet_index_for_decision_cosw;
         string algorithm;
         int diversity_th;
-       	int count_th;
+        int count_th;
+        double p_in_algorithm;
 
 
         //end simulation parameters
@@ -107,7 +112,7 @@ network Network
         }
     submodules:
         controller: Controller {
-            @display("p=254,430;i=device/server;is=l");
+            @display("p=217,242;i=device/server;is=l");
         }
         rack[NumOfToRs]: Rack {
             @display("p=363,430,r,50;i=device/router_l");
@@ -118,9 +123,6 @@ network Network
         agg[NumOfAggregation]: Switch {
             @display("p=363,241,r,50;i=device/switch");
         }
-        controllerswitch: Switch {
-            @display("p=254,349;i=device/switch");
-        }
         dest: Destination {
             @display("p=363,130;i=abstract/penguin;is=vl");
         }
@@ -128,9 +130,8 @@ network Network
         for i=0..NumOfToRs-1 {
             rack[i].port++ <--> delay_ch <--> tor[i].port++;//rate_ch
         }
-        controllerswitch.port++ <--> delay_ch <--> controller.port++;
         for i=0..NumOfAggregation-1 {
-            agg[i].port++ <--> delay_ch <--> controllerswitch.port++;
+            agg[i].port++ <--> delay_ch <--> controller.port++;
         }
         for i=0..NumOfAggregation-1 {
             agg[i].port++ <--> delay_ch <--> dest.port++;
