@@ -89,7 +89,7 @@ void Destination::handleMessage(cMessage *message)
         //cout << "x = " << msg->getMiss_hop() + ( msg->getApp_type() / NUM_OF_APPS) << endl;
 
         //statistics for out of order
-        long long int diff = out_of_order_statistics(msg);
+        out_of_order_statistics(msg);
 
 
         //miss_count_map:
@@ -99,7 +99,7 @@ void Destination::handleMessage(cMessage *message)
         EV << "rate = " << rate << "   org = " << msg->getRate()<<endl;
 
         miss_count_map[std::make_pair(flow_size,rate)] = std::make_pair(miss_count_map[std::make_pair(flow_size,rate)].first + 1,miss_count_map[std::make_pair(flow_size,rate)].second + msg->getMiss_hop());
-        out_of_order_map[std::make_pair(flow_size,rate)] = std::make_pair(out_of_order_map[std::make_pair(flow_size,rate)].first + 1,out_of_order_map[std::make_pair(flow_size,rate)].second + diff);
+        //out_of_order_map[std::make_pair(flow_size,rate)] = std::make_pair(out_of_order_map[std::make_pair(flow_size,rate)].first + 1,out_of_order_map[std::make_pair(flow_size,rate)].second + diff);
 
 
         delete msg;
@@ -163,12 +163,14 @@ void Destination::handleMessage(cMessage *message)
 
 }
 
-long long int Destination::out_of_order_statistics(DataPacket* msg)
+void Destination::out_of_order_statistics(DataPacket* msg)
 {
+    total_packets++;
     long long int diff = get_sequence(msg->getId()) - expected_sequence[get_flow(msg->getId())];
-    out_of_order.collect(diff);
-    expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId());
-    return diff;
+    if(diff > 0)out_of_order_counter += diff;
+    expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId()) + 1;
+
+
 }
 
 void Destination::finish()
@@ -184,6 +186,9 @@ void Destination::finish()
     out_of_order.recordAs("out of order");
     bandwidth_hist.recordAs("bandwidth to destination");
     miss_count_by_apps.recordAs("miss_count_by_apps");
+
+
+    recordScalar("Out of order percentage: ", (double)out_of_order_counter / (double)total_packets);
 
 
 

@@ -23,13 +23,9 @@ Define_Module(Controller);
 void Controller::initialize()
 {
 
-
-    //
-    //convert_xl_to_csv();
-    //endSimulation();
-
-    //
-
+    //total_insertion_count_address:
+    getParentModule()->par("total_insertion_count_address").setDoubleValue((double)(size_t)&total_insertion_count);
+    total_insertion_count_address = (uint64_t*)(size_t)getParentModule()->par("total_insertion_count_address").doubleValue();
 
 
     //set all parameters from csv file;
@@ -41,6 +37,7 @@ void Controller::initialize()
 
     diversity_th = getParentModule()->par("diversity_th").intValue();
     count_th = getParentModule()->par("count_th").intValue();
+    p_in_algorithm = getParentModule()->par("p_in_algorithm").doubleValue();
 
     recordScalar("prob_of_app_A: ",  getParentModule()->par("prob_of_app_A").doubleValue());
 
@@ -84,10 +81,6 @@ void Controller::initialize()
     //Data_for_partition* pkt = new Data_for_partition("Data for partition msg");
     //pkt->setKind(DATA_FOR_PARTITION);
     //sendDelayed(pkt, PARTITION_RATE, "port$o", 0);
-
-
-
-
 }
 
 void Controller::handleMessage(cMessage *message)
@@ -109,8 +102,62 @@ void Controller::handleMessage(cMessage *message)
 
         byte_counter += msg->getByteLength();
 
+        if(algorithm == "Nammer" or algorithm == "NammerSingleSwitch"){
+            double decay_rate = 2,epoch_length = 100*1e-3;
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
 
-        if(algorithm == "cFast"){
+            controller_policy[r].count = controller_policy[r].count / pow(decay_rate,(int)((simTime().dbl() - controller_policy[r].last_packet)/ epoch_length));
+            controller_policy[r].count++;
+            if(controller_policy[r].count >= count_th){
+                if(algorithm == "Nammer"){
+                    send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");
+                }
+                else{//algorithm == "NammerSingleSwitch"
+                    send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");
+                }
+            }
+            controller_policy[r].last_packet = simTime().dbl();
+        }
+
+
+        if(algorithm == "PushCount"){
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
+            controller_policy[r].count++;
+            if(controller_policy[r].count >= count_th){
+                controller_policy[r].count = 0;
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");
+            }
+        }
+
+        if(algorithm == "PushRate"){
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
+            if(controller_policy[r].count == 0){
+                controller_policy[r].first_packet = simTime();
+            }
+            controller_policy[r].count++;
+
+            if((controller_policy[r].count * 12000.0) / (simTime() - controller_policy[r].first_packet) >= count_th and controller_policy[r].count >= 4){
+                controller_policy[r].count = 0;
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");
+            }
+        }
+        if(algorithm == "Ideal"){
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
+            controller_policy[r].count++;
+            if(msg->getApp_type() == 0 and controller_policy[r].count >= 10){//type A
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");
+            }
+            if(msg->getApp_type() == 1){//App B
+                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");
+            }
+        }
+
+
+        if(algorithm == "NaiveController"){
             int r = msg->getDestination();
             int i_index_ToR = msg->getMiss_path(0);
             if(uniform(0,1) <= 0.5){
@@ -121,36 +168,31 @@ void Controller::handleMessage(cMessage *message)
             }
             return;
         }
+        if(algorithm == "Improved Tail"){
 
-        //strat of diversity algorithm:
-        int r = msg->getDestination();
-        int i_index_ToR = msg->getMiss_path(0);
-        int r_count = ++controller_policy[r].count[i_index_ToR];  //to increment and than store
+        }
 
-        if(r_count  >= count_th){
-            controller_policy[r].diversity[i_index_ToR] = true;
-            int r_diversity = 0;//count thr r_diversity
-            for(int i = 0;i < num_of_ToRs;i++){
-                r_diversity += controller_policy[r].diversity[i];
+        if(algorithm == "diversity"){
+            //strat of diversity algorithm:
+            int r = msg->getDestination();
+            int i_index_ToR = msg->getMiss_path(0);
+
+            if(simTime() - controller_policy[r].timestamp[i_index_ToR] <= 10e-6){
+                return;
             }
-            if(r_diversity >= diversity_th){
-                //cout << "Get in : r_diversity = " << r_diversity << "  diversity_th = "<< diversity_th << "  r_count = "  <<  r_count <<  "   count_th = "  <<  count_th  <<  endl;
-                //remove r from all ToRs and insert r to the Aggregation
-                send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
-                for(int i = 0; i < num_of_ToRs;i++){
-                    send_rule(r,msg->getMiss_path(1),i,"null","null","remove");//remove from all ToRs
-                }
 
-                //reset diversity TH:
+            int r_count = ++controller_policy[r].count_per_ToR[i_index_ToR];  //to increment and than store
+
+
+
+            if(r_count  >= count_th){
+                controller_policy[r].diversity[i_index_ToR] = true;
+                int r_diversity = 0;//count thr r_diversity
                 for(int i = 0;i < num_of_ToRs;i++){
-                    controller_policy[r].diversity[i] = 0;
+                    r_diversity += controller_policy[r].diversity[i];
                 }
-            }
-            else{//insert r to the ToR:
-                if(uniform(0,1) <= 0.5){
-                    send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");//insert to ToR
-                }
-                else {
+                if(r_diversity >= diversity_th){
+                    //cout << "Get in : r_diversity = " << r_diversity << "  diversity_th = "<< diversity_th << "  r_count = "  <<  r_count <<  "   count_th = "  <<  count_th  <<  endl;
                     //remove r from all ToRs and insert r to the Aggregation
                     send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
                     for(int i = 0; i < num_of_ToRs;i++){
@@ -162,10 +204,32 @@ void Controller::handleMessage(cMessage *message)
                         controller_policy[r].diversity[i] = 0;
                     }
                 }
-            }
-            controller_policy[r].count[i_index_ToR] = 0;
+                else{//insert r to the ToR:
+                    double prob = p_in_algorithm; //Determining the probability of inserting the rule into the ToR
+                    if(uniform(0,1) <= prob){
+                        send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");//insert to ToR
+                    }
+                    else {
+                        //remove r from all ToRs and insert r to the Aggregation
+                        send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","insert","null");//insert to agg
+                        for(int i = 0; i < num_of_ToRs;i++){
+                            send_rule(r,msg->getMiss_path(1),i,"null","null","remove");//remove from all ToRs
+                        }
 
+                        //reset diversity TH:
+                        for(int i = 0;i < num_of_ToRs;i++){
+                            controller_policy[r].diversity[i] = 0;
+                        }
+                    }
+                }
+                controller_policy[r].count_per_ToR[i_index_ToR] = 0;
+                controller_policy[r].timestamp[i_index_ToR] = simTime();
+
+            }
         }
+
+
+
 
         break;
     }
@@ -191,7 +255,7 @@ void Controller::handleMessage(cMessage *message)
     }
     case INTERVAL_PCK:
     {
-        bandwidth_hist.collect(((long double)(byte_counter*8))/(long double)(INTERVAL));
+        bandwidth_hist.collect(((long double)(byte_counter*8))/(long double)(INTERVAL * 1e9));
         byte_counter = 0;
 
 
@@ -228,7 +292,7 @@ void Controller::send_rule(uint64_t rule,int agg_destination,int tor_destination
     conpacket->setInsert_to_switch(2, action_con_sw.c_str());//do nothing to the controller switch
     sendDelayed(conpacket,processing_time_on_data_packet_in_controller, "port$o", 0); //Model the processing time on a data packet
 
-    insertion_rate++;//Add to statistic
+    (*(total_insertion_count_address))++;//Add to statistic
 }
 
 void Controller::set_controller_policy(uint64_t policy_size){ //set and reset the data set in the controller per each rule.
@@ -387,8 +451,8 @@ void Controller::finish()
     delete[] partition;
 
     recordScalar("INTERVAL: ", INTERVAL);
-    recordScalar("insertion_rate: ", (long double)(insertion_rate)/((simTime().dbl() - START_TIME)));
-
+    //recordScalar("insertion_rate: ", (long double)(insertion_rate)/((simTime().dbl() - START_TIME)));
+    recordScalar("insertion_rate: ",(*(total_insertion_count_address)));
     bandwidth_hist.recordAs("Total_bandwidth_hist");
 }
 

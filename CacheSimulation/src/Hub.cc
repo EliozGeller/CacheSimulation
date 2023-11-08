@@ -29,6 +29,17 @@
 
 using namespace omnetpp;
 
+
+
+//Struct of flows for record traffic:
+typedef struct{
+    simtime_t flow_start_time = -1;
+    simtime_t flow_end_time;
+    string flow_id;
+    int tor_source;
+}flow_struct;
+
+
 namespace cachesimulation {
 
 /**
@@ -44,6 +55,7 @@ private:
     cHistogram bandwidth_hist;
     cHistogram bandwidth_hist_per_sec;
     simtime_t end_time = 0;
+    int id;
 
     //record or create traffic:
     ofstream traffic_file;
@@ -54,6 +66,7 @@ private:
     bool create_offline_traffic;
     simtime_t traffic_interval = 0.25;
     simtime_t last_traffic_interval = 0;
+    std::map<uint64_t, flow_struct> flows;
   protected:
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
@@ -73,6 +86,9 @@ Define_Module(Hub);
 
 void Hub::initialize()
 {
+    id = getParentModule()->getIndex();
+
+
     bandwidth_hist.setName("bandwidth hist");
     bandwidth_hist_per_sec.setName("bandwidth_hist_per_sec");
     flowlet_count.setName("flowlet_count");
@@ -194,8 +210,10 @@ void Hub::handleMessage(cMessage *msg)
     //record packet:
     if(record_traffic){
         string s = ""; //The string structure: "timestamp,flow id,destination,flow size,flow rate"
-        traffic_structure[traffic_structure_current_index] = s + my_to_string(simTime().dbl()) + "," + (string)m->getId() + ","
-                   + my_to_string(m->getDestination()) + "," + my_to_string(m->getFlow_size())+ "," + my_to_string(m->getRate());
+        //traffic_structure[traffic_structure_current_index] = s + my_to_string(simTime().dbl()) + "," + (string)m->getId() + ","
+          //         + to_string(m->getDestination()) + "," + my_to_string(m->getFlow_size())+ "," + my_to_string(m->getRate()) + "," + to_string(id);
+
+        traffic_structure[traffic_structure_current_index] = s + to_string(m->getDestination()) + "," + to_string(id) + "," + my_to_string(simTime().dbl());
 
 
        traffic_structure_current_index++;
@@ -206,6 +224,27 @@ void Hub::handleMessage(cMessage *msg)
            }
            traffic_structure_current_index = 0;
        }
+
+       //record flows:
+       uint64_t dest = m->getDestination();
+
+
+       if(flows[dest].flow_start_time == -1){//first packet of the flow
+           //set all parameters:
+           flows[dest].flow_start_time = simTime();
+           flows[dest].flow_end_time = simTime();
+           flows[dest].flow_id = (string)m->getId() ;
+           flows[dest].tor_source = id;
+        }
+        else {//not the first packet
+            //update only the flow_end_time:
+            flows[dest].flow_end_time = simTime();
+        }
+       //delete the packet and do not forward it:
+       delete m;
+       return;
+
+
     }
 
     //end record packet
@@ -266,11 +305,24 @@ void Hub::finish(){
 
 
     if(record_traffic){
-               for(unsigned int i = 0; (i < TRAFFIC_STRUCTURE_SIZE) and (traffic_structure[i] != "");i++){
-                   traffic_file <<  traffic_structure[i] << endl;
-                   traffic_structure[i] = "";
-               }
+       for(unsigned int i = 0; (i < TRAFFIC_STRUCTURE_SIZE) and (traffic_structure[i] != "");i++){
+           traffic_file <<  traffic_structure[i] << endl;
+           traffic_structure[i] = "";
+       }
+
+       /*
+       traffic_file <<  "Flows:" << endl;
+
+       for (const auto& flow : flows) {
+           string s = ""; //The string structure: "timestamp,flow id,destination,flow size,flow rate"
+           s = s + my_to_string(flow.second.flow_start_time.dbl()) + "," + my_to_string(flow.second.flow_end_time.dbl()) + ","
+                             + to_string(flow.first) + "," + flow.second.flow_id + "," + to_string(flow.second.tor_source);
+           traffic_file <<  s << endl;
+       }
+       */
     }
+
+
 
     traffic_file.close();
 

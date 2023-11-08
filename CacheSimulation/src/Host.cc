@@ -34,6 +34,7 @@ Define_Module(Host);
 
 void Host::initialize()
 {
+    NumOfToRs = getParentModule()->getParentModule()->par("NumOfToRs").intValue();
     //if we create traffic from file, there is no need for Host:
     if(getParentModule()->getParentModule()->par("create_offline_traffic").boolValue()){
         return;
@@ -94,6 +95,8 @@ void Host::initialize()
     pck->setKind(BOUNDS_IN_HOSTS_PCK);
     scheduleAt(simTime() + START_TIME + 0.001,pck);
 
+    algorithm = getParentModule()->getParentModule()->par("algorithm").stdstringValue();
+    rack_id = getParentModule()->getIndex();
 
     prob_of_app_A = getParentModule()->getParentModule()->par("prob_of_app_A").doubleValue();
 
@@ -113,9 +116,7 @@ void Host::start_flow(simtime_t arrival_time){
     if(destination <= 5000)current_flow[getParentModule()->getIndex()][destination] = false;
 
     //set the parameters of the flow:
-    rate = draw_rate(4000); // 4000 - 2.5 G
 
-    //prob_of_app_A = 0.5;  //Change!!!!!
     int app_A_size = average_flow_size;
     int app_B_size = average_flow_size;
     inter_arrival_time_between_flows = (simtime_t)((long double)((prob_of_app_A * app_A_size + (1 - prob_of_app_A) * app_B_size) * 8)/(1.6e12));
@@ -124,7 +125,7 @@ void Host::start_flow(simtime_t arrival_time){
         app_type = 0;
         flow_size = draw_flow_size();
         //rate = 2.5e9 * 4;
-        rate = draw_rate(4000)*4; //mean = 2.5e9 * 4
+        rate = draw_rate(4000)*2; //mean = 2.5e9 * 4
         destination = (uint64_t)uniform(10001,policy_size);
     }
     else { //Application B:
@@ -132,7 +133,7 @@ void Host::start_flow(simtime_t arrival_time){
         flow_size = average_flow_size;
         //rate = 2.5e9/4.0;
         //rate = (long double)uniform(100e6,2*(2.5e9 / 4) - 100e6);
-        rate = draw_rate(4000)/4; //mean = 2.5e9 / 4
+        rate = draw_rate(4000)/2; //mean = 2.5e9 / 4
 
 
 
@@ -150,6 +151,11 @@ void Host::start_flow(simtime_t arrival_time){
 
 
     }
+
+    //
+    flow_size = flow_size/5;
+    rate = rate/2.0;
+    //
 
 
 
@@ -254,9 +260,9 @@ void Host::handleMessage(cMessage *message)
                 //end start new flow
                 return;
               }
-              else{
+              else{//END OF flowlet:
                   EV <<"END OF flowlet"<<endl;
-                  sequence = 0;
+                  //sequence = 0;
                   arrival_time = inter_arrival_time_between_flowlets;
                   flowlet_size = flow_size/number_of_flowlet;
               }

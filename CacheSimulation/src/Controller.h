@@ -41,9 +41,12 @@ class Controller : public cSimpleModule
     cHistogram bandwidth_hist;
     std::map<uint64_t, controller_rule> controller_policy;
     uint64_t insertion_rate = 0;
+    uint64_t total_insertion_count = 0;
+    uint64_t* total_insertion_count_address;
 
     int diversity_th;
     int count_th;
+    double p_in_algorithm;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

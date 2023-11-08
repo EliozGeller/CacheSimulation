@@ -30,6 +30,7 @@ class Host : public cSimpleModule
 {
 private:
    int id;
+   int NumOfToRs;
    std::vector<std::vector<long double>> size_distribution_file;
    int vector_distribution_file_size;
    uint64_t policy_size;
@@ -50,6 +51,8 @@ private:
    bool first;
    simtime_t flow_start_time;
    simtime_t flow_end_time;
+   std::string algorithm;
+   int rack_id;
 
    uint64_t higher_bound_of_subnet;
    uint64_t lower_bound_of_subnet;

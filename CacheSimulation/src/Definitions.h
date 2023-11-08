@@ -16,7 +16,7 @@ using namespace std;
 #define MICROSECOND 0.000001
 
 
-#define INTERVAL 1280*MICROSECOND
+#define INTERVAL 100*MICROSECOND // 1 milisec
 #define NUM_OF_APPS 2.0
 #define START_TIME 3.0
 #define TIME_INTERVAL_FOR_OUTPUTS 0.5
@@ -107,13 +107,13 @@ using namespace std;
 
 
 
-
 //Structs:
 //Struct of a rule in the cache
 typedef struct{
     unsigned long int count;  //count the packets that the rule managed to catch
     unsigned long long int bit_count; // count the bits that the rule managed to catch
-    std::vector<simtime_t> first_packet;   //Intended for estimate the rate for each port-destination flow
+    simtime_t first_packet;
+    std::vector<simtime_t> first_packet_per_port;   //Intended for estimate the rate for each port-destination flow
     simtime_t last_time;   //Intended for calculation for LRU eviction
     simtime_t insertion_time;
     std::vector<double> port_dest_count;  //Intended for estimate the rate for each port-destination flow
@@ -142,8 +142,12 @@ typedef struct{
 typedef struct{
     //bool from_single_sources = false; //store if the rule is from single source, false is also the initially state
     //int source;
-    int count[20] = {0};
+    uint32_t count = 0;
+    uint32_t count_per_ToR[20] = {0};
     bool diversity[20] = {false};
+    simtime_t timestamp[20] = {-100};
+    simtime_t first_packet = 0;
+    double last_packet = 0;
 }controller_rule;
 
 
@@ -153,8 +157,9 @@ uint64_t ip_to_int( std::string s); // Convert a string ip to number
 std::string int_to_ip(uint64_t n);  // Convert a number to string ip
 std::string create_id(uint64_t x,uint64_t y,uint64_t z); //Creates an id of type string "x.y.z"
 
-std::string get_flow(const std::string& str);
-long long int get_sequence(const std::string& str);
+std::string get_flowlet(const std::string& id_str);
+uint32_t get_flow(const std::string& id_str);
+unsigned long long int get_sequence(const std::string& str);
 string get_parameter(vector<vector<string>> content,string key);
 vector<vector<string>> read_data_file(string fname);
 string my_to_string(long double x); // convert long double to string with precision level of 20 digits

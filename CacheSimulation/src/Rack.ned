@@ -18,8 +18,8 @@ module Rack
             @display("p=363,290,r,50;i=device/pc");
         }
     connections:
-        hub.port++ <-->{delay = 1us;}<--> port++;
+        hub.port++ <--> {  delay = 1us; } <--> port++;
         for i=0..number_of_hosts-1 {
-            host[i].port++ <-->{delay = 1us;}<--> hub.port++;
+            host[i].port++ <--> {  delay = 1us; } <--> hub.port++;
         }
 }

@@ -42,7 +42,9 @@ class Destination : public cSimpleModule
     cHistogram out_of_order;
     cHistogram bandwidth_hist;
     unsigned long long int byte_counter;
-    std::map<std::string, long long int> expected_sequence;
+    unsigned long long int out_of_order_counter = 0;
+    unsigned long long int total_packets = 0;
+    std::map<uint32_t, unsigned long long int> expected_sequence;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  miss_count_map;
     std::map<std::pair<unsigned int,unsigned long long int>, std::pair<unsigned long long int,unsigned long long int>>  out_of_order_map;
 
@@ -53,7 +55,7 @@ class Destination : public cSimpleModule
     virtual void handleMessage(cMessage *msg) override;
     virtual void finish() override;
     //virtual void print_data(std::string file_name);
-    long long int out_of_order_statistics(DataPacket* msg);
+    void out_of_order_statistics(DataPacket* msg);
 
 };
 

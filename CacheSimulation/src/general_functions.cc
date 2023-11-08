@@ -37,13 +37,18 @@ std::string int_to_ip(uint64_t n){
 }
 
 
-std::string get_flow(const std::string& str)
+std::string get_flowlet(const std::string& id_str)
 {
-  std::size_t found = str.find_last_of(".");
-  return str.substr(0,found);
+  std::size_t found = id_str.find_last_of(".");
+  return id_str.substr(0,found);
 }
 
-long long int get_sequence(const std::string& str)
+uint32_t get_flow(const std::string& id_str){
+    std::size_t found = id_str.find_first_of(".");
+    return std::stoul(id_str.substr(0,found));
+}
+
+unsigned long long int get_sequence(const std::string& str)
 {
   std::size_t found = str.find_last_of(".");
   return std::stoll(str.substr(found+1));

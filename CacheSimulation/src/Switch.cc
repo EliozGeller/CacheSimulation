@@ -25,18 +25,25 @@ Define_Module(Switch);
 void Switch::initialize()
 {
 
+
+
+
     //flow_count:
     flow_count_hist.setName("flow count");
 
     //insertion_count:
     insertion_count.setName("insertion_count");
     best_flow_size.setName("best_flow_size");
+    total_insertion_count_address = (uint64_t*)(size_t)getParentModule()->par("total_insertion_count_address").doubleValue();
 
     activity_time_of_a_rule_A.setName("activity_time_of_a_rule_A");
     activity_time_of_a_rule_B.setName("activity_time_of_a_rule_B");
 
     //set id:
     id = getIndex();
+
+    //bandwidth_histogram:
+    bandwidth_histogram.setName("bandwidth_histogram");
 
     //set the number of ports:
     number_of_ports = gateSize("port");
@@ -59,6 +66,12 @@ void Switch::initialize()
     if(type == AGGREGATION)diversity_th = getParentModule()->par("diversity_th").intValue();
     if(type == CONTROLLERSWITCH)diversity_th = 1000;
     algorithm = getParentModule()->par("algorithm").stdstringValue();
+    if(algorithm  == "NammerSingleSwitch"){
+        int max_cache_size_Agg = max_cache_size;
+        int max_cache_size_ToR = (int)getParentModule()->getSubmodule("tor",0)->par("max_cache_size").doubleValue();
+        int num_of_ToRs = number_of_ports - 2;
+        max_cache_size = max_cache_size_Agg + num_of_ToRs * max_cache_size_ToR;
+    }
 
 
 
@@ -210,6 +223,9 @@ void Switch::handleMessage(cMessage *message)
 
 
     if(kind_of_packet == INTERVAL_PCK){
+        if(type == TOR){//measure the bandwidth:
+            bandwidth_histogram.collect(((long double)(byte_count*8))/(long double)(INTERVAL * 1e9));
+        }
         flow_count_hist.collect(flow_count.size());
         number_of_flows_which_ends_during_the_interval = 0;
         flow_count.clear();
@@ -221,6 +237,7 @@ void Switch::handleMessage(cMessage *message)
         insertion_count.collect(((insertion_count_pull + insertion_count_push) ?((long double)(insertion_count_pull))/((long double)(insertion_count_pull + insertion_count_push)) : 0));
         insertion_count_push = 0;
         insertion_count_pull = 0;
+        byte_count = 0;
 
         scheduleAt(simTime() + INTERVAL,message);
         return;
@@ -360,7 +377,7 @@ void Switch::handleMessage(cMessage *message)
                         s = eviction_sample_size ;
                     }
                     else {
-                        s = 1;
+                        s = eviction_sample_size;
                     }
                     //uint64_t rule_for_eviction = which_rule_to_evict(s);
 
@@ -434,7 +451,7 @@ void Switch::handleMessage(cMessage *message)
                     s = eviction_sample_size ;
                 }
                 else {
-                    s = 1;
+                    s = eviction_sample_size;
                 }
                 //uint64_t rule_for_eviction = which_rule_to_evict(s);
 
@@ -458,7 +475,8 @@ void Switch::handleMessage(cMessage *message)
             new_rule.last_time = simTime();
             new_rule.insertion_time = simTime();
             new_rule.port_dest_count.assign(number_of_ports, 0);
-            new_rule.first_packet.assign(number_of_ports, 0);
+            new_rule.first_packet_per_port.assign(number_of_ports, 0);
+            new_rule.first_packet = simTime();
             new_rule.rule_diversity = 0;
             cache.insert({ pck->getRule(), new_rule });
             delete pck;
@@ -629,6 +647,8 @@ void Switch::fc_send(DataPacket *msg){
     conpacket->setRule(rule);
     //cache[rule].count = 0; //set the counter to zero in order to avoid burst of fc_send
     sendDelayed(conpacket,processing_time_on_data_packet_in_sw, "port$o", arrivalGate); //Model the processing time on a data packet
+
+    (*(total_insertion_count_address))++;//Add to statistic
 }
 int Switch::cache_search(DataPacket *msg,int ingressPort){
     /*ingressPort is int between 2 to m + 1 where m is the number of ToRs if the switch is aggregation switch
@@ -642,7 +662,10 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
     else {// found
 
         if(it->second.port_dest_count[ingressPort] == 0){ //set the first packet as the first packet that the rule manage to catch
-            it->second.first_packet[ingressPort] = simTime();
+            it->second.first_packet_per_port[ingressPort] = simTime();
+        }
+        if(it->second.count == 0){
+            it->second.first_packet = simTime();
         }
 
         it->second.port_dest_count[ingressPort] += msg->getBitLength();
@@ -657,9 +680,28 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
 
         //!!! algorithm list = {"Push" , "Fast" , "Fast n-th" ,"diversity-Push" ,"non Push"}!!!!!!!!
 
-
-        if(algorithm == "Push"){
-            if(((it->second.port_dest_count[ingressPort] - 12000.0)/(simTime() - it->second.first_packet[ingressPort])) >= threshold  and it->second.port_dest_count[ingressPort] > packet_index_for_decision*1500.0*8.0){  //port-dest rate estimate
+        if(algorithm  == "NammerSingleSwitch"){
+            if(type == TOR){
+                return NOTFOUND;
+            }
+            else{//type is AGGREGATION
+                return FOUND;
+            }
+        }
+        if(algorithm == "diversity" or  algorithm == "NaiveController" or algorithm == "Improved Tail" or algorithm == "Ideal"){
+            return FOUND;
+        }
+        if(algorithm == "PushCount"){
+            if(it->second.count >= threshold){
+                it->second.count = 0;
+                return THRESHOLDCROSS;
+            }
+            else return FOUND;
+        }
+        if(algorithm == "PushRate"){
+// if(((it->second.port_dest_count[ingressPort] - 12000.0)/(simTime() - it->second.first_packet_per_port[ingressPort])) >= threshold  and it->second.port_dest_count[ingressPort] > packet_index_for_decision*1500.0*8.0)
+            if((it->second.bit_count) / (simTime() - it->second.first_packet) >= threshold and it->second.count >= 4){
+                it->second.bit_count = 0;
                 return THRESHOLDCROSS;
             }
             else {
@@ -685,9 +727,6 @@ int Switch::cache_search(DataPacket *msg,int ingressPort){
                 return FOUND;
             }
         }
-        if(algorithm == "non Push" or  algorithm == "cFast"){
-            return FOUND;
-        }
     }
 }
 
@@ -708,7 +747,7 @@ int Switch::hit_forward(uint64_t dest){
 int Switch::miss_table_search(uint64_t dest){
     int egressPort;
     for(int i = 0;i < miss_table_size;i++){
-        if(dest >= miss_table[i].low && dest <= miss_table[i].high){
+        if(miss_table[i].low <= dest and dest <= miss_table[i].high){
             egressPort = miss_table[i].port;
             return egressPort;
         }
@@ -812,6 +851,7 @@ void Switch::finish(){
     cache_occupancy.recordAs("cache_occupancy");
     activity_time_of_a_rule_A.recordAs("activity_time_of_a_rule_A");
     activity_time_of_a_rule_B.recordAs("activity_time_of_a_rule_B");
+    bandwidth_histogram.recordAs("bandwidth_histogram");
 
     int cache_content_by_app_count = 0;
     for (const auto& rule : cache) {

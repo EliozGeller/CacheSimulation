@@ -66,6 +66,8 @@ class Switch : public cSimpleModule
     cHistogram activity_time_of_a_rule_A;
     cHistogram activity_time_of_a_rule_B;
 
+    cHistogram bandwidth_histogram;
+
     int index_flow_size = 0;//delete
     int sizes[16] = {1177 , 4264 , 15443 , 28000 , 37323 , 51067 , 74908 , 93293 ,
             141819 , 237853 , 573344 , 2076744 , 7521945 , 27244995 , 98686787 ,
@@ -75,7 +77,12 @@ class Switch : public cSimpleModule
     unsigned long long int insertion_count_push = 0;
     unsigned long long int insertion_count_pull = 0;
     cHistogram insertion_count;
+    uint64_t* total_insertion_count_address;
     cHistogram bandwidth_data;
+
+    //eviction policy:
+    double beta;
+    double alpha;
 
 
     //flow count:
