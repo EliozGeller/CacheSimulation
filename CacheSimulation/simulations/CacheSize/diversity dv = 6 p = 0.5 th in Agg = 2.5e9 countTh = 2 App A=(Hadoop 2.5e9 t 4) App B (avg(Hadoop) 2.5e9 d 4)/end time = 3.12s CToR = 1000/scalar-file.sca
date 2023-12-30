@@ -1,0 +1,78 @@
+version 2
+run General-4-20231231-00:07:33-68788
+attr configname General
+attr datetime 20231231-00:07:33
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars "$endSim=3.12s, $hosts=15000, $SizeDist=i-hadoop, $p=0.5, $scale=1, $alg=diversity, $diversityTh=6, $pAlg=0.5, $countTh=2, $ThInAgg=2.5e9, $packetIndexAgg=4, $packetIndexCosw=4, $NumOfToRs=10, $NumOfAggregation=1, $cacheToR=1000, $cacheAgg=10*1000*0.5, $thInCons=2.5e9, $rate=1600000000000, $S=CacheSize/diversity dv = 6 p = 0.5 th in Agg = 2.5e9 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 1000/"
+attr iterationvarsf endSim=3.12s,hosts=15000,SizeDist=i-hadoop,p=0.5,scale=1,alg=diversity,diversityTh=6,pAlg=0.5,countTh=2,ThInAgg=2.5e9,packetIndexAgg=4,packetIndexCosw=4,NumOfToRs=10,NumOfAggregation=1,cacheToR=1000,cacheAgg=10#2a1000#2a0.5,thInCons=2.5e9,rate=1600000000000,S=CacheSize#2fdiversity_dv_=_6_p_=_0.5_th_in_Agg_=_2.5e9_countTh_=_2_App_A=(Hadoop_2.5e9_t_4)_App_B_(avg(Hadoop)_2.5e9_d_4)#2fend_time_=_3.12s_CToR_=_1000#2f-
+attr measurement "$endSim=3.12s, $hosts=15000, $SizeDist=i-hadoop, $p=0.5, $scale=1, $alg=diversity, $diversityTh=6, $pAlg=0.5, $countTh=2, $ThInAgg=2.5e9, $packetIndexAgg=4, $packetIndexCosw=4, $NumOfToRs=10, $NumOfAggregation=1, $cacheToR=1000, $cacheAgg=10*1000*0.5, $thInCons=2.5e9, $rate=1600000000000, $S=CacheSize/diversity dv = 6 p = 0.5 th in Agg = 2.5e9 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 1000/"
+attr network Network
+attr processid 68788
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 4
+attr seedset 4
+itervar NumOfAggregation 1
+itervar NumOfToRs 10
+itervar S "CacheSize/diversity dv = 6 p = 0.5 th in Agg = 2.5e9 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 1000/"
+itervar SizeDist i-hadoop
+itervar ThInAgg 2.5e9
+itervar alg diversity
+itervar cacheAgg 10*1000*0.5
+itervar cacheToR 1000
+itervar countTh 2
+itervar diversityTh 6
+itervar endSim 3.12s
+itervar hosts 15000
+itervar p 0.5
+itervar pAlg 0.5
+itervar packetIndexAgg 4
+itervar packetIndexCosw 4
+itervar rate 1600000000000
+itervar scale 1
+itervar thInCons 2.5e9
+param Network.estimate_rate_interval 0.5e-3
+param Network.policy_size "\"10e6\""
+param Network.rack[*].number_of_hosts 15000
+param Network.size_distribution "\"size_distribution/i-hadoop.csv\""
+param Network.prob_of_app_A 0.5
+param Network.scale 1
+param Network.algorithm "\"diversity\""
+param Network.diversity_th 6
+param Network.p_in_algorithm 0.5
+param Network.count_th 2
+param Network.push_threshold_in_aggregation 2.5e9
+param Network.packet_index_for_decision_Agg 4
+param Network.packet_index_for_decision_cosw 4
+param Network.cache_size "\"2222\""
+param Network.NumOfToRs 10
+param Network.NumOfAggregation 1
+param Network.tor[*].max_cache_size 1000
+param Network.agg[*].max_cache_size 10*1000*0.5
+param Network.push_threshold_in_controller_switch 2.5e9
+param Network.total_rate_in_tor "\"1600000000000\""
+param Network.output_file "\"CacheSize/diversity dv = 6 p = 0.5 th in Agg = 2.5e9 countTh = 2 App A=(Hadoop 2.5e9 t 4) App B (avg(Hadoop) 2.5e9 d 4)/end time = 3.12s CToR = 1000/\""
+param Network.run_elephant false
+param Network.bandwidth_elephant_threshold "\"2.5e9\""
+param Network.run_push true
+param Network.record_traffic false
+param Network.create_offline_traffic false
+param Network.linedelay 0.2
+param Network.tor[*].threshold 2
+param Network.agg[*].threshold 2
+param Network.tor[*].Type 1001
+param Network.agg[*].Type 1002
+param Network.rack[*].host[*].flow_appearance "\"\""
+param Network.rack[*].host[*].flow_size "\"\""
+param Network.propagation_time "\"\""
+param Network.processing_time_on_data_packet_in_sw "\"\""
+param Network.processing_time_on_data_packet_in_controller "\"\""
+param Network.insertion_delay "\"\""
+param Network.eviction_delay "\"\""
+param Network.elephant_table_size "\"\""
+param Network.flush_elephant_time "\"\""
+param Network.check_for_elephant_time "\"\""
+param Network.elephant_sample_rx "\"\""
+param Network.already_requested_threshol
