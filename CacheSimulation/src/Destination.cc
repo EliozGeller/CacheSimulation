@@ -169,8 +169,6 @@ void Destination::out_of_order_statistics(DataPacket* msg)
     long long int diff = get_sequence(msg->getId()) - expected_sequence[get_flow(msg->getId())];
     if(diff > 0)out_of_order_counter += diff;
     expected_sequence[get_flow(msg->getId())] = get_sequence(msg->getId()) + 1;
-
-
 }
 
 void Destination::finish()

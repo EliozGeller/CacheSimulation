@@ -205,7 +205,7 @@ void Controller::handleMessage(cMessage *message)
                     }
                 }
                 else{//insert r to the ToR:
-                    double prob = p_in_algorithm; //Determining the probability of inserting the rule into the ToR
+                    double prob = p_in_algorithm; //Determining the probability of inserting the rule into the ToR   //(1.0 / ((double)r_diversity));
                     if(uniform(0,1) <= prob){
                         send_rule(r,msg->getMiss_path(1),i_index_ToR,"null","null","insert");//insert to ToR
                     }
@@ -452,7 +452,7 @@ void Controller::finish()
 
     recordScalar("INTERVAL: ", INTERVAL);
     //recordScalar("insertion_rate: ", (long double)(insertion_rate)/((simTime().dbl() - START_TIME)));
-    recordScalar("insertion_rate: ",(*(total_insertion_count_address)));
+    recordScalar("insertion_rate: ",(*(total_insertion_count_address)) / (simTime().dbl() - START_TIME));
     bandwidth_hist.recordAs("Total_bandwidth_hist");
 }
 

@@ -111,7 +111,6 @@ void Host::start_flow(simtime_t arrival_time){
     id = getSimulation()->getUniqueNumber();
 
 
-
     //end the former flow:
     if(destination <= 5000)current_flow[getParentModule()->getIndex()][destination] = false;
 
@@ -153,9 +152,10 @@ void Host::start_flow(simtime_t arrival_time){
     }
 
     //
-    flow_size = flow_size/5;
-    rate = rate/2.0;
+    flow_size = flow_size;
+    rate = rate;
     //
+
 
 
 
@@ -225,6 +225,7 @@ void Host::handleMessage(cMessage *message)
                if(flowlet_size <= size_packet)msg->setLast_packet(true);
 
                //send the data packet:
+               sequence++;
                send(msg, "port$o", 0);
             }
 
@@ -244,7 +245,6 @@ void Host::handleMessage(cMessage *message)
 
 
           //schedule the next packet or end the flow:
-          sequence++;
           flowlet_size -= size_packet;
 
 
